@@ -1,3 +1,3 @@
 aiohttp==3.8.1
 fonttools[ufo,unicode]==4.33.3
-watchfiles==0.10
+watchfiles==0.15.0
