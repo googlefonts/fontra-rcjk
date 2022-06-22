@@ -62,5 +62,5 @@ write_to = "src/fontra_rcjk/_version.py"
 
 [tool.pytest.ini_options]
 testpaths = [
-    "test-py",
+    "tests",
 ]
