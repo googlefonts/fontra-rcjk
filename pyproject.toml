@@ -31,6 +31,10 @@ classifiers = [
 rcjk = "fontra_rcjk.projectmanager:RCJKProjectManagerFactory"
 
 
+[project.entry-points."fontra.content"]
+rcjk = "fontra_rcjk"
+
+
 [project.entry-points."fontra.filesystem.backends"]
 rcjk = "fontra_rcjk.backend_fs:RCJKBackend"
 

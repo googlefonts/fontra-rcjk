@@ -79,7 +79,7 @@ class RCJKProjectManager:
 
     async def projectPageHandler(self, request):
         token = await self.authorize(request)
-        html = resources.read_text("fontra.client", "landing.html")
+        html = resources.read_text("fontra_rcjk", "landing.html")
         response = web.Response(text=html, content_type="text/html")
 
         if token:
