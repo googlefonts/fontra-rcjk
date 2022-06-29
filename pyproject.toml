@@ -31,7 +31,7 @@ classifiers = [
 rcjk = "fontra_rcjk.projectmanager:RCJKProjectManagerFactory"
 
 
-[project.entry-points."fontra.content"]
+[project.entry-points."fontra.webcontent"]
 rcjk = "fontra_rcjk"
 
 
