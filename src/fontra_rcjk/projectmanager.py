@@ -114,7 +114,7 @@ class RCJKProjectManager:
         client = self.authorizedClients[token]
         return await client.projectAvailable(path)
 
-    async def getRemoteSubject(self, path, token, remoteIP):
+    async def getRemoteSubject(self, path, token):
         client = self.authorizedClients.get(token)
         if client is None:
             logger.info("reject unrecognized token")
