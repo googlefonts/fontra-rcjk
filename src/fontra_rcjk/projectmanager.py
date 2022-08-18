@@ -110,7 +110,7 @@ class RCJKProjectManager:
         self.authorizedClients[token] = AuthorizedClient(rcjkClient)
         return token
 
-    async def projectAvailable(self, token, path):
+    async def projectAvailable(self, path, token):
         client = self.authorizedClients[token]
         return await client.projectAvailable(path)
 
