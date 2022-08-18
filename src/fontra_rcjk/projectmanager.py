@@ -24,7 +24,6 @@ class RCJKProjectManagerFactory:
 
 
 class RCJKProjectManager:
-
     def __init__(self, host):
         self.host = host
         self.authorizedClients = {}
