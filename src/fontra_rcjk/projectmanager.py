@@ -114,13 +114,15 @@ class RCJKProjectManager:
         client = self.authorizedClients[token]
         return await client.projectAvailable(path)
 
+    async def getProjectList(self, token):
+        client = self.authorizedClients[token]
+        return await client.getProjectList()
+
     async def getRemoteSubject(self, path, token):
         client = self.authorizedClients.get(token)
         if client is None:
             logger.info("reject unrecognized token")
             return None
-        if path == "/":
-            return client
 
         assert path[0] == "/"
         path = path[1:]
@@ -131,9 +133,6 @@ class RCJKProjectManager:
 
 
 class AuthorizedClient:
-
-    remoteMethodNames = {"getProjectList"}
-
     def __init__(self, rcjkClient):
         self.rcjkClient = rcjkClient
         self.projectMapping = None
@@ -154,7 +153,7 @@ class AuthorizedClient:
         await self._setupProjectList()
         return path in self.projectMapping
 
-    async def getProjectList(self, *, connection):
+    async def getProjectList(self):
         await self._setupProjectList()
         return sorted(self.projectMapping)
 
