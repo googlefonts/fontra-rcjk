@@ -383,13 +383,8 @@ async def test_getGlobalAxes(backendName, expectedGlobalAxes):
     assert expectedGlobalAxes == globalAxes
 
 
-getLibTestData = [
-    ("rcjk", 4),
-]
-
-
 @pytest.mark.asyncio
-@pytest.mark.parametrize("backendName, expectedLibLen", getLibTestData)
+@pytest.mark.parametrize("backendName, expectedLibLen", [("rcjk", 4)])
 async def test_getFontLib(backendName, expectedLibLen):
     font = getTestFont(backendName)
     lib = await font.getFontLib()
