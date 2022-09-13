@@ -67,6 +67,9 @@ class RCJKMySQLBackend:
             self._tempFontItemsCache["axes"] = axes
         return axes
 
+    async def getUnitsPerEm(self):
+        return 1000
+
     async def getFontLib(self):
         fontLib = self._tempFontItemsCache.get("fontLib")
         if fontLib is None:

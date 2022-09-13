@@ -66,6 +66,9 @@ class RCJKBackend:
             self._globalAxes = axes
         return axes
 
+    async def getUnitsPerEm(self):
+        return 1000
+
     async def getGlyph(self, glyphName):
         layerGlyphs = self._getLayerGlyphs(glyphName)
         axisDefaults = getComponentAxisDefaults(layerGlyphs, self._tempGlyphCache)
