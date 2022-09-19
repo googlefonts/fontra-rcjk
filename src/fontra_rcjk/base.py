@@ -1,7 +1,7 @@
 import asyncio
 from functools import cached_property
 from fontTools.ufoLib.glifLib import readGlyphFromString
-from fontra.backends.pen import PathBuilderPointPen
+from fontra.core.packedpath import PackedPathPointPen
 
 
 class GLIFGlyph:
@@ -10,7 +10,7 @@ class GLIFGlyph:
         self = cls()
         self.unicodes = []
         self.width = 0
-        pen = PathBuilderPointPen()
+        pen = PackedPathPointPen()
         readGlyphFromString(glifData, self, pen)
         self.path = pen.getPath()
         self.components = pen.components
