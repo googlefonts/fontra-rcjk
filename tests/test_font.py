@@ -1,7 +1,9 @@
 import contextlib
+from dataclasses import asdict
 from importlib.metadata import entry_points
 import pathlib
 import pytest
+from fontra.core.classes import VariableGlyph, from_dict
 
 
 dataDir = pathlib.Path(__file__).resolve().parent / "data"
@@ -171,12 +173,12 @@ getGlyphTestData = [
                                 "name": "DC_0031_00",
                                 "transformation": {
                                     "rotation": 0,
-                                    "scalex": 1,
-                                    "scaley": 1,
-                                    "tcenterx": 0,
-                                    "tcentery": 0,
-                                    "x": -1,
-                                    "y": 0,
+                                    "scaleX": 1,
+                                    "scaleY": 1,
+                                    "tCenterX": 0,
+                                    "tCenterY": 0,
+                                    "translateX": -1,
+                                    "translateY": 0,
                                 },
                                 "location": {"T_H_lo": 0, "X_X_bo": 0},
                             }
@@ -197,12 +199,12 @@ getGlyphTestData = [
                                 "name": "DC_0031_00",
                                 "transformation": {
                                     "rotation": 0,
-                                    "scalex": 0.93,
-                                    "scaley": 1,
-                                    "tcenterx": 0,
-                                    "tcentery": 0,
-                                    "x": -23.0,
-                                    "y": 0.0,
+                                    "scaleX": 0.93,
+                                    "scaleY": 1,
+                                    "tCenterX": 0,
+                                    "tCenterY": 0,
+                                    "translateX": -23.0,
+                                    "translateY": 0.0,
                                 },
                                 "location": {"T_H_lo": 0, "X_X_bo": 0.7},
                             }
@@ -264,12 +266,12 @@ getGlyphTestData = [
                                 "name": "zero_00",
                                 "transformation": {
                                     "rotation": 0,
-                                    "scalex": 1,
-                                    "scaley": 1,
-                                    "tcenterx": 0,
-                                    "tcentery": 0,
-                                    "x": 0,
-                                    "y": 0,
+                                    "scaleX": 1,
+                                    "scaleY": 1,
+                                    "tCenterX": 0,
+                                    "tCenterY": 0,
+                                    "translateX": 0,
+                                    "translateY": 0,
                                 },
                             }
                         ],
@@ -290,12 +292,12 @@ getGlyphTestData = [
                                 "name": "zero_00",
                                 "transformation": {
                                     "rotation": 0,
-                                    "scalex": 1,
-                                    "scaley": 1,
-                                    "tcenterx": 0,
-                                    "tcentery": 0,
-                                    "x": 0,
-                                    "y": 0,
+                                    "scaleX": 1,
+                                    "scaleY": 1,
+                                    "tCenterX": 0,
+                                    "tCenterY": 0,
+                                    "translateX": 0,
+                                    "translateY": 0,
                                 },
                             }
                         ],
@@ -316,12 +318,12 @@ getGlyphTestData = [
                                 "name": "zero_00",
                                 "transformation": {
                                     "rotation": 0,
-                                    "scalex": 1,
-                                    "scaley": 1,
-                                    "tcenterx": 0,
-                                    "tcentery": 0,
-                                    "x": 0,
-                                    "y": 0,
+                                    "scaleX": 1,
+                                    "scaleY": 1,
+                                    "tCenterX": 0,
+                                    "tCenterY": 0,
+                                    "translateX": 0,
+                                    "translateY": 0,
                                 },
                             }
                         ],
@@ -381,9 +383,11 @@ async def test_getReverseCmap(backendName, numGlyphs, testMapping):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("backendName, expectedGlyph", getGlyphTestData)
 async def test_getGlyph(backendName, expectedGlyph):
+    expectedGlyph = from_dict(VariableGlyph, expectedGlyph)
     font = getTestFont(backendName)
     with contextlib.closing(font):
-        glyph = await font.getGlyph(expectedGlyph["name"])
+        glyph = await font.getGlyph(expectedGlyph.name)
+        assert asdict(glyph) == asdict(expectedGlyph)
         assert glyph == expectedGlyph
 
 

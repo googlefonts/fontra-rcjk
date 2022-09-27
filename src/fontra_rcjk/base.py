@@ -1,6 +1,15 @@
 import asyncio
 from functools import cached_property
 from fontTools.ufoLib.glifLib import readGlyphFromString
+from fontra.core.classes import (
+    Component,
+    Layer,
+    LocalAxis,
+    Source,
+    StaticGlyph,
+    Transformation,
+    VariableGlyph,
+)
 from fontra.core.packedpath import PackedPathPointPen
 
 
@@ -28,10 +37,9 @@ class GLIFGlyph:
         return sorted(classicComponentNames | deepComponentNames)
 
     def serialize(self):
-        glyphDict = {"xAdvance": self.width}
-        glyphDict["path"] = self.path
-        glyphDict["components"] = self.components
-        return glyphDict
+        return StaticGlyph(
+            xAdvance=self.width, path=self.path, components=self.components
+        )
 
 
 def cleanupAxis(axisDict):
@@ -43,7 +51,7 @@ def cleanupAxis(axisDict):
     axisDict["minValue"] = minValue
     axisDict["defaultValue"] = defaultValue
     axisDict["maxValue"] = maxValue
-    return axisDict
+    return LocalAxis(**axisDict)
 
 
 def getComponentAxisDefaults(layerGlyphs, layerGlyphCache):
@@ -52,7 +60,7 @@ def getComponentAxisDefaults(layerGlyphs, layerGlyphCache):
         componentGlyph = layerGlyphCache.get(componentGlyphName)
         if componentGlyph is not None:
             axisDefaults[componentGlyphName] = {
-                axis["name"]: axis["defaultValue"]
+                axis.name: axis.defaultValue
                 for axis in componentGlyph["foreground"].axes
             }
     return axisDefaults
@@ -60,7 +68,7 @@ def getComponentAxisDefaults(layerGlyphs, layerGlyphCache):
 
 def serializeGlyph(layerGlyphs, axisDefaults):
     layers = {
-        layerName: {"name": layerName, "glyph": glyph.serialize()}
+        layerName: Layer(name=layerName, glyph=glyph.serialize())
         for layerName, glyph in layerGlyphs.items()
     }
 
@@ -69,19 +77,13 @@ def serializeGlyph(layerGlyphs, axisDefaults):
         defaultGlyph.lib.get("robocjk.deepComponents", ()), axisDefaults, None, None
     )
     if defaultComponents:
-        layers["foreground"]["glyph"]["components"] = defaultComponents
+        layers["foreground"].glyph.components = defaultComponents
 
-    dcNames = [c["name"] for c in defaultComponents]
-    defaultComponentLocations = [
-        compo.get("location", {}) for compo in defaultComponents
-    ]
-    componentNames = [
-        c["name"] for c in layers["foreground"]["glyph"].get("components", ())
-    ]
+    dcNames = [c.name for c in defaultComponents]
+    defaultComponentLocations = [compo.location for compo in defaultComponents]
+    componentNames = [c.name for c in layers["foreground"].glyph.components]
 
-    sources = [
-        {"name": "<default>", "location": {}, "layerName": "foreground"},
-    ]
+    sources = [Source(name="<default>", layerName="foreground")]
     variationGlyphData = defaultGlyph.lib.get("robocjk.variationGlyphs", ())
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
         if not varDict.get("on", True):
@@ -97,18 +99,15 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 
         xAdvance = defaultGlyph.width
         if layerName in layers:
-            layerGlyphDict = layers[layerName]["glyph"]
+            layerGlyph = layers[layerName].glyph
             xAdvance = layerGlyphs[layerName].width
         else:
-            layerGlyphDict = {
-                "path": dict(coordinates=[], pointTypes=[], contourInfo=[])
-            }
-            layerDict = {"name": layerName, "glyph": layerGlyphDict}
-            layers[layerName] = layerDict
+            layerGlyph = StaticGlyph()
+            layers[layerName] = Layer(name=layerName, glyph=layerGlyph)
 
         if "width" in varDict:
             xAdvance = varDict["width"]
-        layerGlyphDict["xAdvance"] = xAdvance
+        layerGlyph.xAdvance = xAdvance
 
         components = serializeComponents(
             varDict.get("deepComponents", ()),
@@ -116,23 +115,19 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             dcNames,
             defaultComponentLocations,
         )
-        layerGlyphDict["components"] = components
+        layerGlyph.components = components
 
-        assert componentNames == [
-            c["name"] for c in layerGlyphDict.get("components", ())
-        ]
+        assert componentNames == [c.name for c in layerGlyph.components]
         location = varDict["location"]
-        sources.append(
-            {"name": sourceName, "location": location, "layerName": layerName}
-        )
+        sources.append(Source(name=sourceName, location=location, layerName=layerName))
 
-    return {
-        "name": defaultGlyph.name,
-        "unicodes": defaultGlyph.unicodes,
-        "axes": defaultGlyph.axes,
-        "sources": sources,
-        "layers": list(layers.values()),
-    }
+    return VariableGlyph(
+        name=defaultGlyph.name,
+        unicodes=defaultGlyph.unicodes,
+        axes=defaultGlyph.axes,
+        sources=sources,
+        layers=list(layers.values()),
+    )
 
 
 def serializeComponents(
@@ -144,16 +139,15 @@ def serializeComponents(
         neutralComponentLocations = [{}] * len(deepComponents)
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
-        component = {}
         name = deepCompoDict["name"] if "name" in deepCompoDict else dcNames[index]
-        component["name"] = name
+        component = Component(name)
         if deepCompoDict["coord"]:
-            component["location"] = cleanupLocation(
+            component.location = cleanupLocation(
                 deepCompoDict["coord"],
                 axisDefaults.get(name),
                 neutralComponentLocations[index],
             )
-        component["transformation"] = deepCompoDict["transform"]
+        component.transformation = convertTransformation(deepCompoDict["transform"])
         components.append(component)
     return components
 
@@ -164,6 +158,19 @@ def cleanupLocation(location, axisDefaults, neutralLocation):
     return {
         a: location.get(a, neutralLocation.get(a, v)) for a, v in axisDefaults.items()
     }
+
+
+def convertTransformation(rcjkTransformation):
+    t = rcjkTransformation
+    return Transformation(
+        translateX=t["x"],
+        translateY=t["y"],
+        rotation=t["rotation"],
+        scaleX=t["scalex"],
+        scaleY=t["scaley"],
+        tCenterX=t["tcenterx"],
+        tCenterY=t["tcentery"],
+    )
 
 
 class TimedCache:
