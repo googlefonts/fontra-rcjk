@@ -29,11 +29,8 @@ class GLIFGlyph:
 
     def serialize(self):
         glyphDict = {"xAdvance": self.width}
-        if self.path:
-            glyphDict["path"] = self.path
-        if self.components:
-            glyphDict["components"] = self.components
-
+        glyphDict["path"] = self.path
+        glyphDict["components"] = self.components
         return glyphDict
 
 
@@ -103,7 +100,9 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             layerGlyphDict = layers[layerName]["glyph"]
             xAdvance = layerGlyphs[layerName].width
         else:
-            layerGlyphDict = {}
+            layerGlyphDict = {
+                "path": dict(coordinates=[], pointTypes=[], contourInfo=[])
+            }
             layerDict = {"name": layerName, "glyph": layerGlyphDict}
             layers[layerName] = layerDict
 
@@ -117,8 +116,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             dcNames,
             defaultComponentLocations,
         )
-        if components:
-            layerGlyphDict["components"] = components
+        layerGlyphDict["components"] = components
 
         assert componentNames == [
             c["name"] for c in layerGlyphDict.get("components", ())

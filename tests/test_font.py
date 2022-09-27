@@ -64,6 +64,7 @@ getGlyphTestData = [
                             "pointTypes": [0, 0, 0, 8, 2, 2, 8, 0, 0, 0],
                             "contourInfo": [{"endPoint": 9, "isClosed": True}],
                         },
+                        "components": [],
                         "xAdvance": 229,
                     },
                 },
@@ -96,6 +97,7 @@ getGlyphTestData = [
                             "pointTypes": [0, 0, 0, 8, 2, 2, 8, 0, 0, 0],
                             "contourInfo": [{"endPoint": 9, "isClosed": True}],
                         },
+                        "components": [],
                         "xAdvance": 450,
                     },
                 },
@@ -128,6 +130,7 @@ getGlyphTestData = [
                             "pointTypes": [0, 0, 0, 8, 2, 2, 8, 0, 0, 0],
                             "contourInfo": [{"endPoint": 9, "isClosed": True}],
                         },
+                        "components": [],
                         "xAdvance": 369,
                     },
                 },
@@ -158,6 +161,11 @@ getGlyphTestData = [
                 {
                     "name": "foreground",
                     "glyph": {
+                        "path": {
+                            "contourInfo": [],
+                            "coordinates": [],
+                            "pointTypes": [],
+                        },
                         "components": [
                             {
                                 "name": "DC_0031_00",
@@ -179,6 +187,11 @@ getGlyphTestData = [
                 {
                     "name": "wght",
                     "glyph": {
+                        "path": {
+                            "contourInfo": [],
+                            "coordinates": [],
+                            "pointTypes": [],
+                        },
                         "components": [
                             {
                                 "name": "DC_0031_00",
@@ -240,6 +253,11 @@ getGlyphTestData = [
                 {
                     "name": "foreground",
                     "glyph": {
+                        "path": {
+                            "contourInfo": [],
+                            "coordinates": [],
+                            "pointTypes": [],
+                        },
                         "components": [
                             {
                                 "location": {"WDTH": 0.33, "WGHT": 0.45},
@@ -261,6 +279,11 @@ getGlyphTestData = [
                 {
                     "name": "X_X_bo_1_layer",
                     "glyph": {
+                        "path": {
+                            "contourInfo": [],
+                            "coordinates": [],
+                            "pointTypes": [],
+                        },
                         "components": [
                             {
                                 "location": {"WDTH": 0.33, "WGHT": 1.0},
@@ -282,6 +305,11 @@ getGlyphTestData = [
                 {
                     "name": "X_X_la_2_layer",
                     "glyph": {
+                        "path": {
+                            "contourInfo": [],
+                            "coordinates": [],
+                            "pointTypes": [],
+                        },
                         "components": [
                             {
                                 "location": {"WDTH": 1.0, "WGHT": 0.45},
