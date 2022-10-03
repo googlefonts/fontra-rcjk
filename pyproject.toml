@@ -1,3 +1,8 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+
 [project]
 name = "fontra-rcjk"
 description = "A plugin for Fontra, supporting the rcjk file format and the django-robocjk web api"
@@ -39,25 +44,16 @@ rcjk = "fontra_rcjk"
 rcjk = "fontra_rcjk.backend_fs:RCJKBackend"
 
 
-[build-system]
-requires = ["setuptools", "setuptools-scm[toml]"]
-build-backend = "setuptools.build_meta"
+[tool.hatch.build.targets.wheel]
+packages = ["src/fontra_rcjk"]
 
 
-[tool.setuptools.package-data]
-fontra_rcjk = [
-    "*.html",
-    "*.ico",
-    "*.css",
-    "*.html",
-    "*.js",
-    "*.svg",
-    "*.woff2",
-]
+[tool.hatch.version]
+source = "vcs"
 
 
-[tool.setuptools_scm]
-write_to = "src/fontra_rcjk/_version.py"
+[tool.hatch.build.hooks.vcs]
+version-file = "src/fontra_rcjk/_version.py"
 
 
 [tool.pytest.ini_options]
