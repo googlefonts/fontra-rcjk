@@ -144,10 +144,6 @@ class AuthorizedClient:
     async def close(self):
         await self.rcjkClient.close()
 
-    @contextmanager
-    def useConnection(self, connection):
-        yield
-
     async def projectAvailable(self, path):
         await self._setupProjectList()
         return path in self.projectMapping
