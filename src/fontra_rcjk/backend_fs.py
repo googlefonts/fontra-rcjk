@@ -3,7 +3,13 @@ import os
 import pathlib
 import watchfiles
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
-from .base import GLIFGlyph, TimedCache, getComponentAxisDefaults, serializeGlyph
+from .base import (
+    GLIFGlyph,
+    TimedCache,
+    getComponentAxisDefaults,
+    serializeGlyph,
+    unserializeGlyph,
+)
 
 
 glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
@@ -17,7 +23,7 @@ class RCJKBackend:
     def __init__(self, path):
         self.path = pathlib.Path(path).resolve()
         for name in glyphSetNames:
-            setattr(self, name + "GlyphSet", RCJKGlyphSet(self.path / name))
+            setattr(self, name + "GlyphSet", RCJKGlyphSet(self.path / name, self.registerWrittenPath))
 
         if not self.characterGlyphGlyphSet.exists():
             raise TypeError(f"Not a valid rcjk project: '{path}'")
@@ -37,20 +43,28 @@ class RCJKBackend:
                     assert not unicodes
                 self.reversedCmap[glyphName] = unicodes
 
-        self.glifFileNames = {
-            glifPath.name: glyphName
-            for glyphName, glifPath in self.characterGlyphGlyphSet.contents.items()
-        }
-
+        self._recentlyWrittenPaths = {}
         self._tempGlyphCache = TimedCache()
 
     def close(self):
         self._tempGlyphCache.cancel()
 
+    def registerWrittenPath(self, path):
+        self._recentlyWrittenPaths[os.fspath(path)] = os.path.getmtime(path)
+
     def _iterGlyphSets(self):
         yield self.characterGlyphGlyphSet, True
         yield self.deepComponentGlyphSet, False
         yield self.atomicElementGlyphSet, False
+
+    def getGlyphSetForGlyph(self, glyphName):
+        if glyphName in self.atomicElementGlyphSet:
+            return self.atomicElementGlyphSet
+        elif glyphName in self.deepComponentGlyphSet:
+            return self.deepComponentGlyphSet
+        else:
+            # Default for new glyphs, too
+            return self.characterGlyphGlyphSet
 
     async def getReverseCmap(self):
         return self.reversedCmap
@@ -105,6 +119,11 @@ class RCJKBackend:
                 return gs.getGlyphLayerData(glyphName)
         return None
 
+    async def putGlyph(self, glyphName, glyph):
+        layerGlyphs = unserializeGlyph(glyphName, glyph)
+        glyphSet = self.getGlyphSetForGlyph(glyphName)
+        glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
+
     async def getFontLib(self):
         libPath = self.path / "fontLib.json"
         if libPath.is_file():
@@ -116,7 +135,14 @@ class RCJKBackend:
             async for changes in watchfiles.awatch(self.path):
                 glyphNames = set()
                 for change, path in changes:
-                    glyphName = self.glifFileNames.get(os.path.basename(path))
+                    if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(path):
+                        # We made this change ourselves, so it is not an external change
+                        continue
+                    fileName = os.path.basename(path)
+                    for gs, _ in self._iterGlyphSets():
+                        glyphName = gs.glifFileNames.get(fileName)
+                        if glyphName is not None:
+                            break
                     if glyphName is not None:
                         glyphNames.add(glyphName)
                 if glyphNames:
@@ -127,10 +153,12 @@ class RCJKBackend:
 
 
 class RCJKGlyphSet:
-    def __init__(self, path):
+    def __init__(self, path, registerWrittenPath):
         self.path = path
+        self.registerWrittenPath = registerWrittenPath
         self.revCmap = None
-        self.contents = {}
+        self.contents = {}  # glyphName: path
+        self.glifFileNames = {}  # fileName: glyphName
         self.layers = {}
         self.setupLayers()
 
@@ -160,6 +188,7 @@ class RCJKGlyphSet:
                     unicodes = []
                 glyphNames[glyphName] = unicodes
                 self.contents[glyphName] = path
+                self.glifFileNames[path.name] = glyphName
             self.revCmap = glyphNames
         return self.revCmap
 
@@ -177,3 +206,26 @@ class RCJKGlyphSet:
             if layerPath is not None:
                 glyphLayerData.append((layerName, layerPath.read_bytes()))
         return glyphLayerData
+
+    def putGlyphLayerData(self, glyphName, glyphLayerData):
+        mainPath = self.contents.get(glyphName)
+        if mainPath is None:
+            # fileName = userNameToFileName(glyphName, ..., ".glif")
+            # mainPath = self.path / fileName
+            # self.contents[glyphName] = mainPath
+            raise NotImplementedError("creating new glyphs is yet to be implemented")
+        assert mainPath.parent == self.path
+        mainFileName = mainPath.name
+
+        for layerName, layerGlyph in glyphLayerData:
+            if layerName == "foreground":
+                layerPath = mainPath
+            else:
+                # FIXME: escape / in layerName, and unescape upon read
+                layerPath = self.path / layerName / mainFileName
+                self.layers[layerName][mainFileName] = layerPath
+            existingData = layerPath.read_bytes() if layerPath.exists() else None
+            newData = layerGlyph.asGLIFData()
+            if newData != existingData:
+                layerPath.write_bytes(newData)
+                self.registerWrittenPath(layerPath)
