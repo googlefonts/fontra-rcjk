@@ -23,7 +23,7 @@ class RCJKBackend:
     def __init__(self, path):
         self.path = pathlib.Path(path).resolve()
         for name in glyphSetNames:
-            setattr(self, name + "GlyphSet", RCJKGlyphSet(self.path / name))
+            setattr(self, name + "GlyphSet", RCJKGlyphSet(self.path / name, self.registerWrittenPath))
 
         if not self.characterGlyphGlyphSet.exists():
             raise TypeError(f"Not a valid rcjk project: '{path}'")
@@ -43,10 +43,14 @@ class RCJKBackend:
                     assert not unicodes
                 self.reversedCmap[glyphName] = unicodes
 
+        self._recentlyWrittenPaths = {}
         self._tempGlyphCache = TimedCache()
 
     def close(self):
         self._tempGlyphCache.cancel()
+
+    def registerWrittenPath(self, path):
+        self._recentlyWrittenPaths[os.fspath(path)] = os.path.getmtime(path)
 
     def _iterGlyphSets(self):
         yield self.characterGlyphGlyphSet, True
@@ -131,6 +135,9 @@ class RCJKBackend:
             async for changes in watchfiles.awatch(self.path):
                 glyphNames = set()
                 for change, path in changes:
+                    if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(path):
+                        # We made this change ourselves, so it is not an external change
+                        continue
                     fileName = os.path.basename(path)
                     for gs, _ in self._iterGlyphSets():
                         glyphName = gs.glifFileNames.get(fileName)
@@ -146,8 +153,9 @@ class RCJKBackend:
 
 
 class RCJKGlyphSet:
-    def __init__(self, path):
+    def __init__(self, path, registerWrittenPath):
         self.path = path
+        self.registerWrittenPath = registerWrittenPath
         self.revCmap = None
         self.contents = {}  # glyphName: path
         self.glifFileNames = {}  # fileName: glyphName
@@ -220,3 +228,4 @@ class RCJKGlyphSet:
             newData = layerGlyph.asGLIFData()
             if newData != existingData:
                 layerPath.write_bytes(newData)
+                self.registerWrittenPath(layerPath)
