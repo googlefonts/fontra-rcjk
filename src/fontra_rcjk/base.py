@@ -1,6 +1,7 @@
 import asyncio
+from dataclasses import asdict
 from functools import cached_property
-from fontTools.ufoLib.glifLib import readGlyphFromString
+from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 from fontra.core.classes import (
     Component,
     Layer,
@@ -11,6 +12,7 @@ from fontra.core.classes import (
     VariableGlyph,
 )
 from fontra.core.packedpath import PackedPathPointPen
+from fontra.backends.designspace import cleanAffine, makeAffineTransform
 
 
 class GLIFGlyph:
@@ -24,6 +26,38 @@ class GLIFGlyph:
         self.path = pen.getPath()
         self.components = pen.components
         return self
+
+    @classmethod
+    def fromStaticGlyph(cls, glyphName, staticGlyph):
+        self = cls()
+        self.unicodes = []
+        self.lib = {}
+        self.name = glyphName
+        self.width = staticGlyph.xAdvance
+        self.path = staticGlyph.path
+        self.components = []
+        self.variableComponents = []
+        for component in staticGlyph.components:
+            if component.location:
+                self.variableComponents.append(component)
+            else:
+                # classic component
+                self.components.append(component)
+        return self
+
+    def asGLIFData(self):
+        return writeGlyphToString(self.name, self, self.drawPoints).encode("utf-8")
+
+    def hasOutlineOrClassicComponents(self):
+        return True if self.path.coordinates or self.components else False
+
+    def drawPoints(self, pen):
+        self.path.drawPoints(pen)
+        for component in self.components:
+            pen.addComponent(
+                component.name,
+                cleanAffine(makeAffineTransform(component.transformation)),
+            )
 
     @cached_property
     def axes(self):
@@ -171,6 +205,84 @@ def convertTransformation(rcjkTransformation):
         tCenterX=t["tcenterx"],
         tCenterY=t["tcentery"],
     )
+
+
+def unserializeGlyph(glyphName, glyph):
+    layerGlyphs = {}
+    for layer in glyph.layers:
+        assert layer.name not in layerGlyphs
+        layerGlyphs[layer.name] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
+    defaultGlyph = layerGlyphs["foreground"]
+    defaultGlyph.unicodes = glyph.unicodes
+
+    if glyph.axes:
+        defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
+
+    deepComponents = unserializeComponents(defaultGlyph.variableComponents, True)
+    if deepComponents:
+        defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
+
+    variationGlyphs = []
+    for source in glyph.sources:
+        if source.layerName == "foreground":
+            # This is the default glyph, we don't treat it like a layer in .rcjk
+            continue
+
+        layerGlyph = layerGlyphs[source.layerName]
+        varDict = {"sourceName": source.name, "on": True, "location": source.location}
+        if layerGlyph.width != defaultGlyph.width:
+            varDict["width"] = layerGlyph.width
+
+        deepComponents = unserializeComponents(layerGlyph.variableComponents, False)
+        if deepComponents:
+            varDict["deepComponents"] = deepComponents
+
+        if layerGlyph.hasOutlineOrClassicComponents():
+            varDict["layerName"] = source.layerName
+        else:
+            varDict["layerName"] = ""  # Mimic RoboCJK
+            # This is a "virtual" layer: all info will go to defaultGlyph.lib,
+            # and no "true" layer will be written
+            del layerGlyphs[source.layerName]
+
+        variationGlyphs.append(varDict)
+
+    if variationGlyphs:
+        defaultGlyph.lib["robocjk.variationGlyphs"] = variationGlyphs
+
+    return layerGlyphs
+
+
+def unserializeComponents(variableComponents, addNames):
+    components = []
+    for compo in variableComponents:
+        if addNames:
+            compoDict = dict(name=compo.name)
+        else:
+            compoDict = {}
+        compoDict.update(
+            coord=compo.location,
+            transform=unconvertTransformation(compo.transformation),
+        )
+        components.append(compoDict)
+    return components
+
+
+def unconvertTransformation(transformation):
+    t = transformation
+    return dict(
+        x=t.translateX,
+        y=t.translateY,
+        rotation=t.rotation,
+        scalex=t.scaleX,
+        scaley=t.scaleY,
+        tcenterx=t.tCenterX,
+        tcentery=t.tCenterY,
+    )
+
+
+# def cleanupIntFloatValuesInDict(d):
+#     return {k: int(v) if int(v) == v else v for k, v in d.items()}
 
 
 class TimedCache:
