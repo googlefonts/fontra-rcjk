@@ -91,6 +91,13 @@ class RCJKMySQLBackend:
             response = await method(
                 self.fontUID, glyphID, return_layers=True, return_related=True
             )
+            print("fontUID:", self.fontUID)
+            print("glyphID:", glyphID)
+            print("updated_at:", response["data"]["updated_at"])
+            print("layers_updated_at:", response["data"].get("layers_updated_at", "???"))
+            print("layers/updated_at:")
+            for l in response["data"]["layers"]:
+                print("-", l["updated_at"])
             glyphData = response["data"]
             self._populateGlyphCache(glyphName, glyphData)
             self._tempGlyphCache.updateTimeOut()

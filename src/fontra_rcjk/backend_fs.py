@@ -33,7 +33,9 @@ class RCJKBackend:
             reversedCmap = gs.getGlyphNamesAndUnicodes(not hasEncoding)
             for glyphName, unicodes in reversedCmap.items():
                 assert glyphName not in self.reversedCmap
-                self.reversedCmap[glyphName] = unicodes if hasEncoding else []
+                if not hasEncoding:
+                    assert not unicodes
+                self.reversedCmap[glyphName] = unicodes
 
         self.glifFileNames = {
             glifPath.name: glyphName
