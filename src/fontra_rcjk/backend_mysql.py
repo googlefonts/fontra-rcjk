@@ -1,5 +1,11 @@
 import asyncio
-from .base import GLIFGlyph, TimedCache, getComponentAxisDefaults, serializeGlyph
+from .base import (
+    GLIFGlyph,
+    TimedCache,
+    getComponentAxisDefaults,
+    serializeGlyph,
+    unserializeGlyph,
+)
 
 
 class RCJKMySQLBackend:
@@ -86,7 +92,7 @@ class RCJKMySQLBackend:
         layerGlyphs = self._tempGlyphCache.get(glyphName)
         if layerGlyphs is None:
             typeCode, glyphID = self._glyphMapping[glyphName]
-            getMethodName = _getGlyphMethods[typeCode]
+            getMethodName = _getFullMethodName(typeCode, "get")
             method = getattr(self.client, getMethodName)
             response = await method(
                 self.fontUID, glyphID, return_layers=True, return_related=True
@@ -120,15 +126,12 @@ def buildLayerGlyphs(glyphData):
     return layerGlyphs
 
 
-_getGlyphMethods = {
-    "AE": "atomic_element_get",
-    "DC": "deep_component_get",
-    "CG": "character_glyph_get",
+_baseGlyphMethods = {
+    "AE": "atomic_element_",
+    "DC": "deep_component_",
+    "CG": "character_glyph_",
 }
 
 
-_glyphListMethods = {
-    "AE": "atomic_element_list",
-    "DC": "deep_component_list",
-    "CG": "character_glyph_list",
-}
+def _getFullMethodName(typeCode, methodName):
+    return _baseGlyphMethods[typeCode] + methodName
