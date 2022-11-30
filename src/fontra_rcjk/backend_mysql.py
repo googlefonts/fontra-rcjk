@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -16,7 +17,7 @@ class RCJKMySQLBackend:
         self.client = client
         self.fontUID = fontUID
         self._glyphMapping = None
-        self._tempGlyphCache = TimedCache()
+        self._glyphCache = LRUCache()
         self._tempFontItemsCache = TimedCache()
         self._lastPolledForChanges = None
         self._writingChanges = 0
@@ -24,7 +25,7 @@ class RCJKMySQLBackend:
         return self
 
     def close(self):
-        self._tempGlyphCache.cancel()
+        self._glyphCache.cancel()
         self._tempFontItemsCache.cancel()
 
     async def getReverseCmap(self):
@@ -89,11 +90,11 @@ class RCJKMySQLBackend:
 
     async def getGlyph(self, glyphName):
         layerGlyphs = await self._getLayerGlyphs(glyphName)
-        axisDefaults = getComponentAxisDefaults(layerGlyphs, self._tempGlyphCache)
+        axisDefaults = getComponentAxisDefaults(layerGlyphs, self._glyphCache)
         return serializeGlyph(layerGlyphs, axisDefaults)
 
     async def _getLayerGlyphs(self, glyphName):
-        layerGlyphs = self._tempGlyphCache.get(glyphName)
+        layerGlyphs = self._glyphCache.get(glyphName)
         if layerGlyphs is None:
             typeCode, glyphID = self._glyphMapping[glyphName]
             getMethodName = _getFullMethodName(typeCode, "get")
@@ -105,14 +106,13 @@ class RCJKMySQLBackend:
 
             glyphData = response["data"]
             self._populateGlyphCache(glyphName, glyphData)
-            self._tempGlyphCache.updateTimeOut()
-            layerGlyphs = self._tempGlyphCache[glyphName]
+            layerGlyphs = self._glyphCache[glyphName]
         return layerGlyphs
 
     def _populateGlyphCache(self, glyphName, glyphData):
-        if glyphName in self._tempGlyphCache:
+        if glyphName in self._glyphCache:
             return
-        self._tempGlyphCache[glyphName] = buildLayerGlyphs(glyphData)
+        self._glyphCache[glyphName] = buildLayerGlyphs(glyphData)
         for subGlyphData in glyphData.get("made_of", ()):
             subGlyphName = subGlyphData["name"]
             typeCode, glyphID = self._glyphMapping[subGlyphName]
@@ -195,10 +195,9 @@ class RCJKMySQLBackend:
                         ):
                             continue
                         glyphNames.add(glyphName)
-                        self._tempGlyphCache.pop(glyphName, None)
+                        self._glyphCache.pop(glyphName, None)
 
                 if glyphNames:
-                    print(glyphNames)
                     yield glyphNames
 
                 if not latestTimeStamp:
@@ -236,3 +235,37 @@ _baseGlyphMethods = {
 
 def _getFullMethodName(typeCode, methodName):
     return _baseGlyphMethods[typeCode] + methodName
+
+
+class LRUCache(dict):
+    """A quick and dirty Least Recently Used cache, which leverages the fact
+    that dictionaries keep their insertion order.
+    """
+
+    def __init__(self, maxSize=128):
+        assert isinstance(maxSize, int)
+        assert maxSize > 0
+        self._maxSize = maxSize
+
+    def get(self, key, default=None):
+        # Override to we get our custom __getitem__ behavior
+        try:
+            value = self[key]
+        except KeyError:
+            value = default
+        return value
+
+    def __getitem__(self, key):
+        value = super().__getitem__(key)
+        # Move key/value to the end
+        del self[key]
+        self[key] = value
+        return value
+
+    def __setitem__(self, key, value):
+        if key in self:
+            # Ensure key/value get inserted at the end
+            del self[key]
+        super().__setitem__(key, value)
+        while len(self) > self._maxSize:
+            del self[next(iter(self))]
