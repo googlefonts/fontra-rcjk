@@ -148,8 +148,15 @@ class RCJKMySQLBackend:
             raise
 
         try:
+            existingLayerData = {
+                k: v.cachedGLIFData
+                for k, v in self._glyphCache.get(glyphName, {}).items()
+            }
             for layerName, layerGlyph in layerGlyphs.items():
                 xmlData = layerGlyph.asGLIFData()
+                if xmlData == existingLayerData.get(layerName):
+                    # There was no change in the xml data, skip the update
+                    continue
                 if layerName == "foreground":
                     args = (glyphName, "update", xmlData)
                 else:
