@@ -180,7 +180,8 @@ class RCJKMySQLBackend:
                     # We're in the middle of writing changes, let's skip a round
                     continue
                 response = await self.client.glif_list(
-                    self.fontUID, updated_since=self._lastPolledForChanges
+                    self.fontUID,
+                    updated_since=fudgeTimeStamp(self._lastPolledForChanges),
                 )
                 responseData = response["data"]
                 glyphNames = set()
@@ -269,3 +270,13 @@ class LRUCache(dict):
         super().__setitem__(key, value)
         while len(self) > self._maxSize:
             del self[next(iter(self))]
+
+
+def fudgeTimeStamp(isoString):
+    """Add one millisecond to the timestamp, so we can account for differences
+    in the microsecond range.
+    """
+    one_millisecond = timedelta(milliseconds=1)
+    d = datetime.fromisoformat(isoString)
+    d = d + one_millisecond
+    return d.isoformat()
