@@ -225,7 +225,7 @@ class RCJKGlyphSet:
                 layerPath = self.path / layerName / mainFileName
                 self.layers[layerName][mainFileName] = layerPath
             existingData = layerPath.read_bytes() if layerPath.exists() else None
-            newData = layerGlyph.asGLIFData()
+            newData = layerGlyph.asGLIFData().encode("utf-8")
             if newData != existingData:
                 layerPath.write_bytes(newData)
                 self.registerWrittenPath(layerPath)
