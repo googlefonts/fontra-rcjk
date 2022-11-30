@@ -6,6 +6,7 @@ from .base import (
     serializeGlyph,
     unserializeGlyph,
 )
+from .client import HTTPError
 
 
 class RCJKMySQLBackend:
@@ -17,6 +18,9 @@ class RCJKMySQLBackend:
         self._glyphMapping = None
         self._tempGlyphCache = TimedCache()
         self._tempFontItemsCache = TimedCache()
+        self._lastPolledForChanges = None
+        self._writingChanges = 0
+        self._writtenGlyphTimeStamps = {}
         return self
 
     def close(self):
@@ -97,6 +101,8 @@ class RCJKMySQLBackend:
             response = await method(
                 self.fontUID, glyphID, return_layers=True, return_related=True
             )
+            self._lastPolledForChanges = response["server_datetime"]
+
             glyphData = response["data"]
             self._populateGlyphCache(glyphName, glyphData)
             self._tempGlyphCache.updateTimeOut()
@@ -113,6 +119,101 @@ class RCJKMySQLBackend:
             assert typeCode == subGlyphData["type_code"]
             assert glyphID == subGlyphData["id"]
             self._populateGlyphCache(subGlyphName, subGlyphData)
+
+    async def putGlyph(self, glyphName, glyph):
+        self._writingChanges += 1
+        try:
+            return await self._putGlyph(glyphName, glyph)
+        finally:
+            self._writingChanges -= 1
+
+    async def _putGlyph(self, glyphName, glyph):
+        layerGlyphs = unserializeGlyph(glyphName, glyph)
+        typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
+        if glyphID is None:
+            raise NotImplementedError("creating new glyphs is yet to be implemented")
+
+        try:
+            lockResponse = await self._callGlyphMethod(
+                glyphName, "lock", return_data=False
+            )
+        except HTTPError as error:
+            print("can't lock glyph", error)
+            raise
+
+        try:
+            for layerName, layerGlyph in layerGlyphs.items():
+                xmlData = layerGlyph.asGLIFData()
+                if layerName == "foreground":
+                    args = (glyphName, "update", xmlData)
+                else:
+                    args = (glyphName, "layer_update", layerName, xmlData)
+                updateResponse = await self._callGlyphMethod(
+                    *args,
+                    return_data=False,
+                    return_layers=False,
+                )
+        finally:
+            unlockResponse = await self._callGlyphMethod(
+                glyphName, "unlock", return_data=False
+            )
+
+        self._writtenGlyphTimeStamps[glyphName] = getUpdatedTimeStamp(
+            unlockResponse["data"]
+        )
+
+    async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
+        typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
+        assert glyphID is not None
+        apiMethodName = _getFullMethodName(typeCode, methodName)
+        method = getattr(self.client, apiMethodName)
+        return await method(self.fontUID, glyphID, *args, **kwargs)
+
+    def watchExternalChanges(self):
+        async def glifWatcher():
+            while True:
+                await asyncio.sleep(5)
+                if self._lastPolledForChanges is None:
+                    # No glyphs have been requested, so there's nothing to update
+                    continue
+                if self._writingChanges:
+                    # We're in the middle of writing changes, let's skip a round
+                    continue
+                response = await self.client.glif_list(
+                    self.fontUID, updated_since=self._lastPolledForChanges
+                )
+                responseData = response["data"]
+                glyphNames = set()
+                latestTimeStamp = ""  # less than any timestamp string
+                for k in ["atomic_elements", "character_glyphs", "deep_components"]:
+                    for glyphInfo in responseData[k]:
+                        glyphName = glyphInfo["name"]
+                        glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
+                        latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
+                        if glyphUpdatedAt == self._writtenGlyphTimeStamps.pop(
+                            glyphName, None
+                        ):
+                            continue
+                        glyphNames.add(glyphName)
+                        self._tempGlyphCache.pop(glyphName, None)
+
+                if glyphNames:
+                    print(glyphNames)
+                    yield glyphNames
+
+                if not latestTimeStamp:
+                    latestTimeStamp = response["server_datetime"]
+
+                self._lastPolledForChanges = latestTimeStamp
+
+        return glifWatcher()
+
+
+def getUpdatedTimeStamp(info):
+    timeStamp = info["updated_at"]
+    if info["layers_updated_at"]:
+        timeStamp = max(timeStamp, info["layers_updated_at"])
+    return timeStamp
 
 
 def buildLayerGlyphs(glyphData):
