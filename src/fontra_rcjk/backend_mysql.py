@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+import logging
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -8,6 +9,9 @@ from .base import (
     unserializeGlyph,
 )
 from .client import HTTPError
+
+
+logger = logging.getLogger(__name__)
 
 
 class RCJKMySQLBackend:
@@ -121,11 +125,13 @@ class RCJKMySQLBackend:
             self._populateGlyphCache(subGlyphName, subGlyphData)
 
     async def putGlyph(self, glyphName, glyph):
+        logger.info(f"Start writing {glyphName}")
         self._writingChanges += 1
         try:
             return await self._putGlyph(glyphName, glyph)
         finally:
             self._writingChanges -= 1
+            logger.info(f"Done writing {glyphName}")
 
     async def _putGlyph(self, glyphName, glyph):
         layerGlyphs = unserializeGlyph(glyphName, glyph)
