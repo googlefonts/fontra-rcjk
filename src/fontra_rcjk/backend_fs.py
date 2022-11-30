@@ -23,7 +23,11 @@ class RCJKBackend:
     def __init__(self, path):
         self.path = pathlib.Path(path).resolve()
         for name in glyphSetNames:
-            setattr(self, name + "GlyphSet", RCJKGlyphSet(self.path / name, self.registerWrittenPath))
+            setattr(
+                self,
+                name + "GlyphSet",
+                RCJKGlyphSet(self.path / name, self.registerWrittenPath),
+            )
 
         if not self.characterGlyphGlyphSet.exists():
             raise TypeError(f"Not a valid rcjk project: '{path}'")
@@ -135,7 +139,9 @@ class RCJKBackend:
             async for changes in watchfiles.awatch(self.path):
                 glyphNames = set()
                 for change, path in changes:
-                    if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(path):
+                    if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(
+                        path
+                    ):
                         # We made this change ourselves, so it is not an external change
                         continue
                     fileName = os.path.basename(path)
