@@ -49,6 +49,10 @@ class GLIFGlyph:
     def asGLIFData(self):
         return writeGlyphToString(self.name, self, self.drawPoints)
 
+    @cached_property
+    def cachedGLIFData(self):
+        return self.asGLIFData()
+
     def hasOutlineOrClassicComponents(self):
         return True if self.path.coordinates or self.components else False
 
