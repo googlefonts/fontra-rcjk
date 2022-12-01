@@ -20,6 +20,7 @@ class RCJKMySQLBackend:
         self = cls()
         self.client = client
         self.fontUID = fontUID
+        self.watchExternalChangesInterval = 5
         self._glyphMapping = None
         self._glyphCache = LRUCache()
         self._tempFontItemsCache = TimedCache()
@@ -185,7 +186,7 @@ class RCJKMySQLBackend:
     def watchExternalChanges(self):
         async def glifWatcher():
             while True:
-                await asyncio.sleep(5)
+                await asyncio.sleep(self.watchExternalChangesInterval)
                 if self._lastPolledForChanges is None:
                     # No glyphs have been requested, so there's nothing to update
                     continue
