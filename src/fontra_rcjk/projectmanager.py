@@ -16,15 +16,20 @@ class RCJKProjectManagerFactory:
     @staticmethod
     def addArguments(parser):
         parser.add_argument("rcjk_host")
+        parser.add_argument("--read-only", action="store_true")
 
     @staticmethod
     def getProjectManager(arguments):
-        return RCJKProjectManager(host=arguments.rcjk_host)
+        return RCJKProjectManager(
+            host=arguments.rcjk_host,
+            readOnly=arguments.read_only,
+        )
 
 
 class RCJKProjectManager:
-    def __init__(self, host):
+    def __init__(self, host, *, readOnly=False):
         self.host = host
+        self.readOnly = readOnly
         self.authorizedClients = {}
 
     async def close(self):
@@ -105,7 +110,9 @@ class RCJKProjectManager:
             return None
         logger.info(f"successfully logged in '{username}'")
         token = secrets.token_hex(32)
-        self.authorizedClients[token] = AuthorizedClient(rcjkClient)
+        self.authorizedClients[token] = AuthorizedClient(
+            rcjkClient, readOnly=self.readOnly
+        )
         return token
 
     async def projectAvailable(self, path, token):
@@ -131,8 +138,9 @@ class RCJKProjectManager:
 
 
 class AuthorizedClient:
-    def __init__(self, rcjkClient):
+    def __init__(self, rcjkClient, readOnly=False):
         self.rcjkClient = rcjkClient
+        self.readOnly = readOnly
         self.projectMapping = None
         self.fontHandlers = {}
 
@@ -163,6 +171,6 @@ class AuthorizedClient:
         if fontHandler is None:
             _, fontUID = self.projectMapping[path]
             backend = RCJKMySQLBackend.fromRCJKClient(self.rcjkClient, fontUID)
-            fontHandler = FontHandler(backend)
+            fontHandler = FontHandler(backend, readOnly=self.readOnly)
             self.fontHandlers[path] = fontHandler
         return fontHandler
