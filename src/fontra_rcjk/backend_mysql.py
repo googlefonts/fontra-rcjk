@@ -201,7 +201,6 @@ class RCJKMySQLBackend:
                 self.fontUID,
                 updated_since=fudgeTimeStamp(self._lastPolledForChanges),
             )
-            print("ppooool", self.client._username)
             responseData = response["data"]
             glyphNames = set()
             latestTimeStamp = ""  # less than any timestamp string
