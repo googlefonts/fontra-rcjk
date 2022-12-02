@@ -179,9 +179,7 @@ class RCJKMySQLBackend:
                 glyphName, "unlock", return_data=False
             )
 
-        self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(
-            unlockResponse["data"]
-        )
+        self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(unlockResponse["data"])
 
     async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
         typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
