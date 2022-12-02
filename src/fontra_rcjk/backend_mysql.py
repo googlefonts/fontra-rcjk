@@ -191,7 +191,7 @@ class RCJKMySQLBackend:
         return await method(self.fontUID, glyphID, *args, **kwargs)
 
     def watchExternalChanges(self):
-        async def glifWatcher():
+        async def databaseWatcher():
             while True:
                 await asyncio.sleep(self.watchExternalChangesInterval + 2 * random())
                 if self._lastPolledForChanges is None:
@@ -225,7 +225,7 @@ class RCJKMySQLBackend:
 
                 self._lastPolledForChanges = latestTimeStamp
 
-        return glifWatcher()
+        return databaseWatcher()
 
 
 def getUpdatedTimeStamp(info):
