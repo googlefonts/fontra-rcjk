@@ -134,28 +134,23 @@ class RCJKBackend:
             return json.loads(libPath.read_text(encoding="utf-8"))
         return {}
 
-    def watchExternalChanges(self):
-        async def glifWatcher():
-            async for changes in watchfiles.awatch(self.path):
-                glyphNames = set()
-                for change, path in changes:
-                    if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(
-                        path
-                    ):
-                        # We made this change ourselves, so it is not an external change
-                        continue
-                    fileName = os.path.basename(path)
-                    for gs, _ in self._iterGlyphSets():
-                        glyphName = gs.glifFileNames.get(fileName)
-                        if glyphName is not None:
-                            break
+    async def watchExternalChanges(self):
+        async for changes in watchfiles.awatch(self.path):
+            glyphNames = set()
+            for change, path in changes:
+                if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(path):
+                    # We made this change ourselves, so it is not an external change
+                    continue
+                fileName = os.path.basename(path)
+                for gs, _ in self._iterGlyphSets():
+                    glyphName = gs.glifFileNames.get(fileName)
                     if glyphName is not None:
-                        glyphNames.add(glyphName)
-                if glyphNames:
-                    self._tempGlyphCache.clear()
-                    yield glyphNames
-
-        return glifWatcher()
+                        break
+                if glyphName is not None:
+                    glyphNames.add(glyphName)
+            if glyphNames:
+                self._tempGlyphCache.clear()
+                yield glyphNames
 
 
 class RCJKGlyphSet:
