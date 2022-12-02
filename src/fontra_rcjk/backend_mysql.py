@@ -188,42 +188,40 @@ class RCJKMySQLBackend:
         method = getattr(self.client, apiMethodName)
         return await method(self.fontUID, glyphID, *args, **kwargs)
 
-    def watchExternalChanges(self):
-        async def databaseWatcher():
-            while True:
-                await asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
-                if self._lastPolledForChanges is None:
-                    # No glyphs have been requested, so there's nothing to update
-                    continue
-                if self._writingChanges:
-                    # We're in the middle of writing changes, let's skip a round
-                    continue
-                response = await self.client.glif_list(
-                    self.fontUID,
-                    updated_since=fudgeTimeStamp(self._lastPolledForChanges),
-                )
-                responseData = response["data"]
-                glyphNames = set()
-                latestTimeStamp = ""  # less than any timestamp string
-                for k in ["atomic_elements", "character_glyphs", "deep_components"]:
-                    for glyphInfo in responseData[k]:
-                        glyphName = glyphInfo["name"]
-                        glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
-                        latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
-                        if glyphUpdatedAt == self._glyphTimeStamps.get(glyphName):
-                            continue
-                        glyphNames.add(glyphName)
-                        self._glyphCache.pop(glyphName, None)
+    async def watchExternalChanges(self):
+        while True:
+            await asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
+            if self._lastPolledForChanges is None:
+                # No glyphs have been requested, so there's nothing to update
+                continue
+            if self._writingChanges:
+                # We're in the middle of writing changes, let's skip a round
+                continue
+            response = await self.client.glif_list(
+                self.fontUID,
+                updated_since=fudgeTimeStamp(self._lastPolledForChanges),
+            )
+            print("ppooool", self.client._username)
+            responseData = response["data"]
+            glyphNames = set()
+            latestTimeStamp = ""  # less than any timestamp string
+            for k in ["atomic_elements", "character_glyphs", "deep_components"]:
+                for glyphInfo in responseData[k]:
+                    glyphName = glyphInfo["name"]
+                    glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
+                    latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
+                    if glyphUpdatedAt == self._glyphTimeStamps.get(glyphName):
+                        continue
+                    glyphNames.add(glyphName)
+                    self._glyphCache.pop(glyphName, None)
 
-                if glyphNames:
-                    yield glyphNames
+            if glyphNames:
+                yield glyphNames
 
-                if not latestTimeStamp:
-                    latestTimeStamp = response["server_datetime"]
+            if not latestTimeStamp:
+                latestTimeStamp = response["server_datetime"]
 
-                self._lastPolledForChanges = latestTimeStamp
-
-        return databaseWatcher()
+            self._lastPolledForChanges = latestTimeStamp
 
 
 def getUpdatedTimeStamp(info):
