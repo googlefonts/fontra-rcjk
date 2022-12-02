@@ -16,11 +16,16 @@ from fontra.backends.designspace import cleanAffine, makeAffineTransform
 
 
 class GLIFGlyph:
+    def __init__(self):
+        self.unicodes = []
+        self.width = 0
+        self.lib = {}
+        self.components = []
+        self.variableComponents = []
+
     @classmethod
     def fromGLIFData(cls, glifData):
         self = cls()
-        self.unicodes = []
-        self.width = 0
         pen = PackedPathPointPen()
         readGlyphFromString(glifData, self, pen)
         self.path = pen.getPath()
@@ -30,13 +35,9 @@ class GLIFGlyph:
     @classmethod
     def fromStaticGlyph(cls, glyphName, staticGlyph):
         self = cls()
-        self.unicodes = []
-        self.lib = {}
         self.name = glyphName
         self.width = staticGlyph.xAdvance
         self.path = staticGlyph.path
-        self.components = []
-        self.variableComponents = []
         for component in staticGlyph.components:
             if component.location:
                 self.variableComponents.append(component)
@@ -46,7 +47,11 @@ class GLIFGlyph:
         return self
 
     def asGLIFData(self):
-        return writeGlyphToString(self.name, self, self.drawPoints).encode("utf-8")
+        return writeGlyphToString(self.name, self, self.drawPoints)
+
+    @cached_property
+    def cachedGLIFData(self):
+        return self.asGLIFData()
 
     def hasOutlineOrClassicComponents(self):
         return True if self.path.coordinates or self.components else False
