@@ -147,14 +147,13 @@ class RCJKMySQLBackend:
                 glyphName, "lock", return_data=False
             )
         except HTTPError as error:
-            print("can't lock glyph", error)
-            raise
+            return f"Can't lock glyph ({error})"
 
         try:
             glyphTimeStamp = self._glyphTimeStamps[glyphName]
             currentTimeStamp = getUpdatedTimeStamp(lockResponse["data"])
             if glyphTimeStamp != currentTimeStamp:
-                raise ValueError("Edit on stale data")
+                return "Someone else made an edit just before you."
 
             existingLayerData = {
                 k: v.cachedGLIFData
