@@ -168,7 +168,7 @@ class RCJKMySQLBackend:
                     args = (glyphName, "update", xmlData)
                 else:
                     args = (glyphName, "layer_update", layerName, xmlData)
-                updateResponse = await self._callGlyphMethod(
+                await self._callGlyphMethod(
                     *args,
                     return_data=False,
                     return_layers=False,
