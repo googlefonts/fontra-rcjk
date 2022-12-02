@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import logging
+from random import random
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -26,7 +27,7 @@ class RCJKMySQLBackend:
         self._tempFontItemsCache = TimedCache()
         self._lastPolledForChanges = None
         self._writingChanges = 0
-        self._writtenGlyphTimeStamps = {}
+        self._glyphTimeStamps = {}
         return self
 
     def close(self):
@@ -110,6 +111,7 @@ class RCJKMySQLBackend:
             self._lastPolledForChanges = response["server_datetime"]
 
             glyphData = response["data"]
+            self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(glyphData)
             self._populateGlyphCache(glyphName, glyphData)
             layerGlyphs = self._glyphCache[glyphName]
         return layerGlyphs
@@ -149,6 +151,11 @@ class RCJKMySQLBackend:
             raise
 
         try:
+            glyphTimeStamp = self._glyphTimeStamps[glyphName]
+            currentTimeStamp = getUpdatedTimeStamp(lockResponse["data"])
+            if glyphTimeStamp != currentTimeStamp:
+                raise ValueError("Edit on stale data")
+
             existingLayerData = {
                 k: v.cachedGLIFData
                 for k, v in self._glyphCache.get(glyphName, {}).items()
@@ -167,12 +174,13 @@ class RCJKMySQLBackend:
                     return_data=False,
                     return_layers=False,
                 )
+            self._glyphCache[glyphName] = layerGlyphs
         finally:
             unlockResponse = await self._callGlyphMethod(
                 glyphName, "unlock", return_data=False
             )
 
-        self._writtenGlyphTimeStamps[glyphName] = getUpdatedTimeStamp(
+        self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(
             unlockResponse["data"]
         )
 
@@ -186,7 +194,7 @@ class RCJKMySQLBackend:
     def watchExternalChanges(self):
         async def glifWatcher():
             while True:
-                await asyncio.sleep(self.watchExternalChangesInterval)
+                await asyncio.sleep(self.watchExternalChangesInterval + 2 * random())
                 if self._lastPolledForChanges is None:
                     # No glyphs have been requested, so there's nothing to update
                     continue
@@ -205,9 +213,7 @@ class RCJKMySQLBackend:
                         glyphName = glyphInfo["name"]
                         glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
                         latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
-                        if glyphUpdatedAt == self._writtenGlyphTimeStamps.pop(
-                            glyphName, None
-                        ):
+                        if glyphUpdatedAt == self._glyphTimeStamps.get(glyphName):
                             continue
                         glyphNames.add(glyphName)
                         self._glyphCache.pop(glyphName, None)
