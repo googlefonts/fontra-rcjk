@@ -200,9 +200,11 @@ class RCJKMySQLBackend:
 
     async def watchExternalChanges(self):
         while True:
-            sleeper = asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
             await asyncio.wait(
-                [sleeper, self._pollNowEvent.wait()],
+                [
+                    asyncio.sleep(self.pollExternalChangesInterval + 2 * random()),
+                    self._pollNowEvent.wait(),
+                ],
                 return_when=asyncio.FIRST_COMPLETED,
             )
             self._pollNowEvent.clear()
