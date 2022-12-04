@@ -28,6 +28,7 @@ class RCJKMySQLBackend:
         self._lastPolledForChanges = None
         self._writingChanges = 0
         self._glyphTimeStamps = {}
+        self._pollNowEvent = asyncio.Event()
         return self
 
     def close(self):
@@ -149,37 +150,46 @@ class RCJKMySQLBackend:
         except HTTPError as error:
             return f"Can't lock glyph ({error})"
 
+        errorMessage = None
+
         try:
             glyphTimeStamp = self._glyphTimeStamps[glyphName]
             currentTimeStamp = getUpdatedTimeStamp(lockResponse["data"])
             if glyphTimeStamp != currentTimeStamp:
-                return "Someone else made an edit just before you."
-
-            existingLayerData = {
-                k: v.cachedGLIFData
-                for k, v in self._glyphCache.get(glyphName, {}).items()
-            }
-            for layerName, layerGlyph in layerGlyphs.items():
-                xmlData = layerGlyph.asGLIFData()
-                if xmlData == existingLayerData.get(layerName):
-                    # There was no change in the xml data, skip the update
-                    continue
-                if layerName == "foreground":
-                    args = (glyphName, "update", xmlData)
-                else:
-                    args = (glyphName, "layer_update", layerName, xmlData)
-                await self._callGlyphMethod(
-                    *args,
-                    return_data=False,
-                    return_layers=False,
-                )
-            self._glyphCache[glyphName] = layerGlyphs
+                errorMessage = "Someone else made an edit just before you."
+            else:
+                existingLayerData = {
+                    k: v.cachedGLIFData
+                    for k, v in self._glyphCache.get(glyphName, {}).items()
+                }
+                for layerName, layerGlyph in layerGlyphs.items():
+                    xmlData = layerGlyph.asGLIFData()
+                    if xmlData == existingLayerData.get(layerName):
+                        # There was no change in the xml data, skip the update
+                        continue
+                    if layerName == "foreground":
+                        args = (glyphName, "update", xmlData)
+                    else:
+                        args = (glyphName, "layer_update", layerName, xmlData)
+                    await self._callGlyphMethod(
+                        *args,
+                        return_data=False,
+                        return_layers=False,
+                    )
+                self._glyphCache[glyphName] = layerGlyphs
         finally:
             unlockResponse = await self._callGlyphMethod(
                 glyphName, "unlock", return_data=False
             )
+            if errorMessage:
+                asyncio.get_running_loop().call_soon(self._pollNowEvent.set)
 
-        self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(unlockResponse["data"])
+        if errorMessage is None:
+            self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(
+                unlockResponse["data"]
+            )
+
+        return errorMessage
 
     async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
         typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
@@ -190,7 +200,12 @@ class RCJKMySQLBackend:
 
     async def watchExternalChanges(self):
         while True:
-            await asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
+            sleeper = asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
+            await asyncio.wait(
+                [sleeper, self._pollNowEvent.wait()],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            self._pollNowEvent.clear()
             if self._lastPolledForChanges is None:
                 # No glyphs have been requested, so there's nothing to update
                 continue
