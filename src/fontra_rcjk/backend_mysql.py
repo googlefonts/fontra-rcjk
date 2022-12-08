@@ -32,7 +32,6 @@ class RCJKMySQLBackend:
         return self
 
     def close(self):
-        self._glyphCache.cancel()
         self._tempFontItemsCache.cancel()
 
     async def getReverseCmap(self):

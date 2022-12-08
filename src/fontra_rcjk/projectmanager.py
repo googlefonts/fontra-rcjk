@@ -150,6 +150,8 @@ class AuthorizedClient:
 
     async def close(self):
         await self.rcjkClient.close()
+        for fontHandler in self.fontHandlers.values():
+            await fontHandler.close()
 
     async def projectAvailable(self, path):
         await self._setupProjectList()
