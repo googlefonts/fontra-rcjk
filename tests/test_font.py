@@ -18,7 +18,6 @@ getGlyphTestData = [
                 {"defaultValue": 0.0, "maxValue": 1.0, "minValue": 0.0, "name": "WGHT"},
             ],
             "name": "one_00",
-            "unicodes": [],
             "sources": [
                 {
                     "name": "<default>",
@@ -146,7 +145,6 @@ getGlyphTestData = [
                 {"defaultValue": 0.0, "maxValue": 1.0, "minValue": 0.0, "name": "wght"}
             ],
             "name": "uni0031",
-            "unicodes": [49],
             "sources": [
                 {
                     "name": "<default>",
@@ -233,7 +231,6 @@ getGlyphTestData = [
                 },
             ],
             "name": "DC_0030_00",
-            "unicodes": [],
             "sources": [
                 {
                     "name": "<default>",
