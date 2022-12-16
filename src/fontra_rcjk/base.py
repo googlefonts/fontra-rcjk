@@ -211,13 +211,13 @@ def convertTransformation(rcjkTransformation):
     )
 
 
-def unserializeGlyph(glyphName, glyph):
+def unserializeGlyph(glyphName, glyph, unicodes):
     layerGlyphs = {}
     for layer in glyph.layers:
         assert layer.name not in layerGlyphs
         layerGlyphs[layer.name] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
     defaultGlyph = layerGlyphs["foreground"]
-    defaultGlyph.unicodes = glyph.unicodes
+    defaultGlyph.unicodes = unicodes
 
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]

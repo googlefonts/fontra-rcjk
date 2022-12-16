@@ -137,7 +137,9 @@ class RCJKMySQLBackend:
             logger.info(f"Done writing {glyphName}")
 
     async def _putGlyph(self, glyphName, glyph):
-        layerGlyphs = unserializeGlyph(glyphName, glyph)
+        layerGlyphs = unserializeGlyph(
+            glyphName, glyph, self.reversedCmap.get(glyphName, [])
+        )
         typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
         if glyphID is None:
             raise NotImplementedError("creating new glyphs is yet to be implemented")

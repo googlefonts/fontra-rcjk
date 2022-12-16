@@ -124,7 +124,7 @@ class RCJKBackend:
         return None
 
     async def putGlyph(self, glyphName, glyph):
-        layerGlyphs = unserializeGlyph(glyphName, glyph)
+        layerGlyphs = unserializeGlyph(glyphName, glyph,  self.reversedCmap.get(glyphName, []))
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
 
