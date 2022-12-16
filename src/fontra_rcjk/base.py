@@ -162,7 +162,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 
     return VariableGlyph(
         name=defaultGlyph.name,
-        unicodes=defaultGlyph.unicodes,
         axes=defaultGlyph.axes,
         sources=sources,
         layers=list(layers.values()),
