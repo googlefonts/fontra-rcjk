@@ -69,7 +69,7 @@ class GLIFGlyph:
         return [cleanupAxis(axis) for axis in self.lib.get("robocjk.axes", ())]
 
     def getComponentNames(self):
-        classicComponentNames = {compo["name"] for compo in self.components}
+        classicComponentNames = {compo.name for compo in self.components}
         deepComponentNames = {
             compo["name"] for compo in self.lib.get("robocjk.deepComponents", ())
         }
@@ -154,7 +154,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             dcNames,
             defaultComponentLocations,
         )
-        layerGlyph.components = components
+        layerGlyph.components += components
 
         assert componentNames == [c.name for c in layerGlyph.components]
         location = varDict["location"]
