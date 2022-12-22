@@ -115,7 +115,8 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     defaultComponents = serializeComponents(
         defaultGlyph.lib.get("robocjk.deepComponents", ()), axisDefaults, None, None
     )
-    layers["foreground"].glyph.components += defaultComponents
+    if defaultComponents:
+        layers["foreground"].glyph.components = defaultComponents
 
     dcNames = [c.name for c in defaultComponents]
     defaultComponentLocations = [compo.location for compo in defaultComponents]
