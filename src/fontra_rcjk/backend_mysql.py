@@ -29,6 +29,7 @@ class RCJKMySQLBackend:
         self._writingChanges = 0
         self._glyphTimeStamps = {}
         self._pollNowEvent = asyncio.Event()
+        self.reversedCmap = None
         return self
 
     def close(self):
@@ -52,6 +53,7 @@ class RCJKMySQLBackend:
                     unicodes = []
                 revCmap[glyphInfo["name"]] = unicodes
                 self._glyphMapping[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
+        self.reversedCmap = revCmap
         return revCmap
 
     async def _getMiscFontItems(self):
