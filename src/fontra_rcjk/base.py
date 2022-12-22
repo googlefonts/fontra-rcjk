@@ -216,8 +216,8 @@ def unserializeGlyph(glyphName, glyph, unicodes):
     for layer in glyph.layers:
         assert layer.name not in layerGlyphs
         layerGlyphs[layer.name] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
+        layerGlyphs[layer.name].unicodes = unicodes
     defaultGlyph = layerGlyphs["foreground"]
-    defaultGlyph.unicodes = unicodes
 
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
