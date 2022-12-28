@@ -154,7 +154,8 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             dcNames,
             defaultComponentLocations,
         )
-        layerGlyph.components += components
+        if components:
+            layerGlyph.components = components
 
         assert componentNames == [c.name for c in layerGlyph.components]
         location = varDict["location"]
