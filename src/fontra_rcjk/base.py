@@ -77,7 +77,7 @@ class GLIFGlyph:
 
     def serialize(self):
         return StaticGlyph(
-            xAdvance=self.width, path=self.path, components=self.components
+            xAdvance=self.width, path=self.path, components=list(self.components)
         )
 
 
