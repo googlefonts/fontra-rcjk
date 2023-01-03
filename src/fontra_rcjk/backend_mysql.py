@@ -283,7 +283,7 @@ class LRUCache(dict):
         self._maxSize = maxSize
 
     def get(self, key, default=None):
-        # Override to we get our custom __getitem__ behavior
+        # Override so we get our custom __getitem__ behavior
         try:
             value = self[key]
         except KeyError:
