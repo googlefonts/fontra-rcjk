@@ -202,45 +202,56 @@ class RCJKMySQLBackend:
         return await method(self.fontUID, glyphID, *args, **kwargs)
 
     async def watchExternalChanges(self):
+        errorDelay = 30
         while True:
-            await asyncio.wait(
-                [
-                    asyncio.sleep(self.pollExternalChangesInterval + 2 * random()),
-                    self._pollNowEvent.wait(),
-                ],
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-            self._pollNowEvent.clear()
-            if self._lastPolledForChanges is None:
-                # No glyphs have been requested, so there's nothing to update
-                continue
-            if self._writingChanges:
-                # We're in the middle of writing changes, let's skip a round
-                continue
-            response = await self.client.glif_list(
-                self.fontUID,
-                updated_since=fudgeTimeStamp(self._lastPolledForChanges),
-            )
-            responseData = response["data"]
-            glyphNames = set()
-            latestTimeStamp = ""  # less than any timestamp string
-            for k in ["atomic_elements", "character_glyphs", "deep_components"]:
-                for glyphInfo in responseData[k]:
-                    glyphName = glyphInfo["name"]
-                    glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
-                    latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
-                    if glyphUpdatedAt == self._glyphTimeStamps.get(glyphName):
-                        continue
-                    glyphNames.add(glyphName)
-                    self._glyphCache.pop(glyphName, None)
+            try:
+                glyphNames = await self._pollOnceForChanges()
+            except Exception as e:
+                logger.error("error while polling for changes: %r", e)
+                logger.info(f"pausing the poll loop for {errorDelay} seconds")
+                await asyncio.sleep(errorDelay)
+            else:
+                if glyphNames:
+                    yield glyphNames
 
-            if glyphNames:
-                yield glyphNames
+    async def _pollOnceForChanges(self):
+        await asyncio.wait(
+            [
+                asyncio.sleep(self.pollExternalChangesInterval + 2 * random()),
+                self._pollNowEvent.wait(),
+            ],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        self._pollNowEvent.clear()
+        if self._lastPolledForChanges is None:
+            # No glyphs have been requested, so there's nothing to update
+            return
+        if self._writingChanges:
+            # We're in the middle of writing changes, let's skip a round
+            return
+        response = await self.client.glif_list(
+            self.fontUID,
+            updated_since=fudgeTimeStamp(self._lastPolledForChanges),
+        )
+        responseData = response["data"]
+        glyphNames = set()
+        latestTimeStamp = ""  # less than any timestamp string
+        for k in ["atomic_elements", "character_glyphs", "deep_components"]:
+            for glyphInfo in responseData[k]:
+                glyphName = glyphInfo["name"]
+                glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
+                latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
+                if glyphUpdatedAt == self._glyphTimeStamps.get(glyphName):
+                    continue
+                glyphNames.add(glyphName)
+                self._glyphCache.pop(glyphName, None)
 
-            if not latestTimeStamp:
-                latestTimeStamp = response["server_datetime"]
+        if not latestTimeStamp:
+            latestTimeStamp = response["server_datetime"]
 
-            self._lastPolledForChanges = latestTimeStamp
+        self._lastPolledForChanges = latestTimeStamp
+
+        return glyphNames
 
 
 def getUpdatedTimeStamp(info):
