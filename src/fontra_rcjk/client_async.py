@@ -54,10 +54,16 @@ class RCJKClientAsync(RCJKClient):
                 if self._auth_token:
                     # re-send previously unauthorized request
                     return await self._api_call(view_name, params)
+            if response.status != 200:
+                if response.content_type == "application/json":
+                    response_data = await response.json()
+                    error = response_data["error"]
+                else:
+                    error = await response.text()
+                    error = error[:400]  # Strip to an arbitrary length
+                raise HTTPError(f"{response.status} {error}")
             # read response json data and return dict
             response_data = await response.json()
-            if response.status != 200:
-                raise HTTPError(f"{response.status} {response_data['error']}")
         return response_data
 
     async def auth_token(self):
