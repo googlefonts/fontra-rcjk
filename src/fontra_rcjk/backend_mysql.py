@@ -53,7 +53,7 @@ class RCJKMySQLBackend:
                     unicodes = []
                 glyphMap[glyphInfo["name"]] = unicodes
                 self._rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
-        # TODO: self._glyphMap should be a cache once we know hot to invalidate
+        # TODO: self._glyphMap should be a cache once we know how to invalidate
         self._glyphMap = glyphMap
         return glyphMap
 
