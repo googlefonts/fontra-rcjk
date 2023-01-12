@@ -35,7 +35,7 @@ class RCJKMySQLBackend:
     def close(self):
         self._tempFontItemsCache.cancel()
 
-    async def getReverseCmap(self):
+    async def getGlyphMap(self):
         self._glyphMapping = {}
         revCmap = {}
         response = await self.client.glif_list(self.fontUID)

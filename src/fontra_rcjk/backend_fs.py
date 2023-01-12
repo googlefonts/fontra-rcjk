@@ -70,7 +70,7 @@ class RCJKBackend:
             # Default for new glyphs, too
             return self.characterGlyphGlyphSet
 
-    async def getReverseCmap(self):
+    async def getGlyphMap(self):
         return self.reversedCmap
 
     async def getGlobalAxes(self):
