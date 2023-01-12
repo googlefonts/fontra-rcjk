@@ -213,7 +213,7 @@ class RCJKMySQLBackend:
                 await asyncio.sleep(errorDelay)
             else:
                 if glyphNames:
-                    yield glyphNames
+                    yield None, {"glyphs": dict.fromkeys(glyphNames)}
 
     async def _pollOnceForChanges(self):
         await asyncio.wait(

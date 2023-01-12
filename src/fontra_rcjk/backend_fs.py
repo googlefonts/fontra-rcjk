@@ -152,7 +152,7 @@ class RCJKBackend:
                     glyphNames.add(glyphName)
             if glyphNames:
                 self._tempGlyphCache.clear()
-                yield glyphNames
+                yield None, {"glyphs": dict.fromkeys(glyphNames)}
 
 
 class RCJKGlyphSet:
