@@ -38,14 +38,14 @@ class RCJKBackend:
         else:
             self.designspace = {}
 
-        self.reversedCmap = {}
+        self._glyphMap = {}
         for gs, hasEncoding in self._iterGlyphSets():
-            reversedCmap = gs.getGlyphNamesAndUnicodes(not hasEncoding)
-            for glyphName, unicodes in reversedCmap.items():
-                assert glyphName not in self.reversedCmap
+            glyphMap = gs.getGlyphNamesAndUnicodes(not hasEncoding)
+            for glyphName, unicodes in glyphMap.items():
+                assert glyphName not in self._glyphMap
                 if not hasEncoding:
                     assert not unicodes
-                self.reversedCmap[glyphName] = unicodes
+                self._glyphMap[glyphName] = unicodes
 
         self._recentlyWrittenPaths = {}
         self._tempGlyphCache = TimedCache()
@@ -71,7 +71,7 @@ class RCJKBackend:
             return self.characterGlyphGlyphSet
 
     async def getGlyphMap(self):
-        return self.reversedCmap
+        return self._glyphMap
 
     async def getGlobalAxes(self):
         axes = getattr(self, "_globalAxes", None)
@@ -125,7 +125,7 @@ class RCJKBackend:
 
     async def putGlyph(self, glyphName, glyph):
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self.reversedCmap.get(glyphName, [])
+            glyphName, glyph, self._glyphMap.get(glyphName, [])
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
