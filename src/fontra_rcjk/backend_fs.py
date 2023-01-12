@@ -40,7 +40,7 @@ class RCJKBackend:
 
         self._glyphMap = {}
         for gs, hasEncoding in self._iterGlyphSets():
-            glyphMap = gs.getGlyphNamesAndUnicodes(not hasEncoding)
+            glyphMap = gs.getGlyphMap(not hasEncoding)
             for glyphName, unicodes in glyphMap.items():
                 assert glyphName not in self._glyphMap
                 if not hasEncoding:
@@ -159,7 +159,7 @@ class RCJKGlyphSet:
     def __init__(self, path, registerWrittenPath):
         self.path = path
         self.registerWrittenPath = registerWrittenPath
-        self.revCmap = None
+        self.glyphMap = None
         self.contents = {}  # glyphName: path
         self.glifFileNames = {}  # fileName: glyphName
         self.layers = {}
@@ -179,8 +179,8 @@ class RCJKGlyphSet:
                 if glifPaths:
                     self.layers[layerDir.name] = glifPaths
 
-    def getGlyphNamesAndUnicodes(self, ignoreUnicodes=False):
-        if self.revCmap is None:
+    def getGlyphMap(self, ignoreUnicodes=False):
+        if self.glyphMap is None:
             glyphNames = {}
             for path in self.path.glob("*.glif"):
                 with open(path, "rb") as f:
@@ -192,8 +192,8 @@ class RCJKGlyphSet:
                 glyphNames[glyphName] = unicodes
                 self.contents[glyphName] = path
                 self.glifFileNames[path.name] = glyphName
-            self.revCmap = glyphNames
-        return self.revCmap
+            self.glyphMap = glyphNames
+        return self.glyphMap
 
     def __contains__(self, glyphName):
         return glyphName in self.contents
