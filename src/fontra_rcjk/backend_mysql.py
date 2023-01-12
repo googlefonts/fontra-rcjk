@@ -29,7 +29,7 @@ class RCJKMySQLBackend:
         self._writingChanges = 0
         self._glyphTimeStamps = {}
         self._pollNowEvent = asyncio.Event()
-        self.reversedCmap = None
+        self._glyphMap = None
         return self
 
     def close(self):
@@ -37,7 +37,7 @@ class RCJKMySQLBackend:
 
     async def getGlyphMap(self):
         self._rcjkGlyphInfo = {}
-        revCmap = {}
+        glyphMap = {}
         response = await self.client.glif_list(self.fontUID)
         glyphTypes = [
             ("AE", "atomic_elements"),
@@ -51,10 +51,10 @@ class RCJKMySQLBackend:
                     unicodes = [int(unicode_hex, 16)]
                 else:
                     unicodes = []
-                revCmap[glyphInfo["name"]] = unicodes
+                glyphMap[glyphInfo["name"]] = unicodes
                 self._rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
-        self.reversedCmap = revCmap
-        return revCmap
+        self._glyphMap = glyphMap  # TODO: should be a cache once we know hot to invalidate
+        return glyphMap
 
     async def _getMiscFontItems(self):
         if not hasattr(self, "_getMiscFontItemsTask"):
@@ -140,7 +140,7 @@ class RCJKMySQLBackend:
 
     async def _putGlyph(self, glyphName, glyph):
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self.reversedCmap.get(glyphName, [])
+            glyphName, glyph, self._glyphMap.get(glyphName, [])
         )
         typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
         if glyphID is None:
