@@ -22,22 +22,22 @@ class RCJKMySQLBackend:
         self.client = client
         self.fontUID = fontUID
         self.pollExternalChangesInterval = 8
-        self._glyphMapping = None
+        self._rcjkGlyphInfo = None
         self._glyphCache = LRUCache()
         self._tempFontItemsCache = TimedCache()
         self._lastPolledForChanges = None
         self._writingChanges = 0
         self._glyphTimeStamps = {}
         self._pollNowEvent = asyncio.Event()
-        self.reversedCmap = None
+        self._glyphMap = None
         return self
 
     def close(self):
         self._tempFontItemsCache.cancel()
 
-    async def getReverseCmap(self):
-        self._glyphMapping = {}
-        revCmap = {}
+    async def getGlyphMap(self):
+        self._rcjkGlyphInfo = {}
+        glyphMap = {}
         response = await self.client.glif_list(self.fontUID)
         glyphTypes = [
             ("AE", "atomic_elements"),
@@ -51,10 +51,10 @@ class RCJKMySQLBackend:
                     unicodes = [int(unicode_hex, 16)]
                 else:
                     unicodes = []
-                revCmap[glyphInfo["name"]] = unicodes
-                self._glyphMapping[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
-        self.reversedCmap = revCmap
-        return revCmap
+                glyphMap[glyphInfo["name"]] = unicodes
+                self._rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
+        self._glyphMap = glyphMap  # TODO: should be a cache once we know hot to invalidate
+        return glyphMap
 
     async def _getMiscFontItems(self):
         if not hasattr(self, "_getMiscFontItemsTask"):
@@ -104,7 +104,7 @@ class RCJKMySQLBackend:
     async def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._glyphCache.get(glyphName)
         if layerGlyphs is None:
-            typeCode, glyphID = self._glyphMapping[glyphName]
+            typeCode, glyphID = self._rcjkGlyphInfo[glyphName]
             getMethodName = _getFullMethodName(typeCode, "get")
             method = getattr(self.client, getMethodName)
             response = await method(
@@ -124,7 +124,7 @@ class RCJKMySQLBackend:
         self._glyphCache[glyphName] = buildLayerGlyphs(glyphData)
         for subGlyphData in glyphData.get("made_of", ()):
             subGlyphName = subGlyphData["name"]
-            typeCode, glyphID = self._glyphMapping[subGlyphName]
+            typeCode, glyphID = self._rcjkGlyphInfo[subGlyphName]
             assert typeCode == subGlyphData["type_code"]
             assert glyphID == subGlyphData["id"]
             self._populateGlyphCache(subGlyphName, subGlyphData)
@@ -140,9 +140,9 @@ class RCJKMySQLBackend:
 
     async def _putGlyph(self, glyphName, glyph):
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self.reversedCmap.get(glyphName, [])
+            glyphName, glyph, self._glyphMap.get(glyphName, [])
         )
-        typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
+        typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
         if glyphID is None:
             raise NotImplementedError("creating new glyphs is yet to be implemented")
 
@@ -195,7 +195,7 @@ class RCJKMySQLBackend:
         return errorMessage
 
     async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
-        typeCode, glyphID = self._glyphMapping.get(glyphName, ("CG", None))
+        typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
         assert glyphID is not None
         apiMethodName = _getFullMethodName(typeCode, methodName)
         method = getattr(self.client, apiMethodName)

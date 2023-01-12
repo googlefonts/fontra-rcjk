@@ -38,14 +38,14 @@ class RCJKBackend:
         else:
             self.designspace = {}
 
-        self.reversedCmap = {}
+        self._glyphMap = {}
         for gs, hasEncoding in self._iterGlyphSets():
-            reversedCmap = gs.getGlyphNamesAndUnicodes(not hasEncoding)
-            for glyphName, unicodes in reversedCmap.items():
-                assert glyphName not in self.reversedCmap
+            glyphMap = gs.getGlyphMap(not hasEncoding)
+            for glyphName, unicodes in glyphMap.items():
+                assert glyphName not in self._glyphMap
                 if not hasEncoding:
                     assert not unicodes
-                self.reversedCmap[glyphName] = unicodes
+                self._glyphMap[glyphName] = unicodes
 
         self._recentlyWrittenPaths = {}
         self._tempGlyphCache = TimedCache()
@@ -70,8 +70,8 @@ class RCJKBackend:
             # Default for new glyphs, too
             return self.characterGlyphGlyphSet
 
-    async def getReverseCmap(self):
-        return self.reversedCmap
+    async def getGlyphMap(self):
+        return self._glyphMap
 
     async def getGlobalAxes(self):
         axes = getattr(self, "_globalAxes", None)
@@ -125,7 +125,7 @@ class RCJKBackend:
 
     async def putGlyph(self, glyphName, glyph):
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self.reversedCmap.get(glyphName, [])
+            glyphName, glyph, self._glyphMap.get(glyphName, [])
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
@@ -159,7 +159,7 @@ class RCJKGlyphSet:
     def __init__(self, path, registerWrittenPath):
         self.path = path
         self.registerWrittenPath = registerWrittenPath
-        self.revCmap = None
+        self.glyphMap = None
         self.contents = {}  # glyphName: path
         self.glifFileNames = {}  # fileName: glyphName
         self.layers = {}
@@ -179,8 +179,8 @@ class RCJKGlyphSet:
                 if glifPaths:
                     self.layers[layerDir.name] = glifPaths
 
-    def getGlyphNamesAndUnicodes(self, ignoreUnicodes=False):
-        if self.revCmap is None:
+    def getGlyphMap(self, ignoreUnicodes=False):
+        if self.glyphMap is None:
             glyphNames = {}
             for path in self.path.glob("*.glif"):
                 with open(path, "rb") as f:
@@ -192,8 +192,8 @@ class RCJKGlyphSet:
                 glyphNames[glyphName] = unicodes
                 self.contents[glyphName] = path
                 self.glifFileNames[path.name] = glyphName
-            self.revCmap = glyphNames
-        return self.revCmap
+            self.glyphMap = glyphNames
+        return self.glyphMap
 
     def __contains__(self, glyphName):
         return glyphName in self.contents
