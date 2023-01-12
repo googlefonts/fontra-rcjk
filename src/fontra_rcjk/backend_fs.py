@@ -181,7 +181,7 @@ class RCJKGlyphSet:
 
     def getGlyphMap(self, ignoreUnicodes=False):
         if self.glyphMap is None:
-            glyphNames = {}
+            glyphMap = {}
             for path in self.path.glob("*.glif"):
                 with open(path, "rb") as f:
                     # assuming all unicodes are in the first 1024 bytes of the file
@@ -189,10 +189,10 @@ class RCJKGlyphSet:
                 glyphName, unicodes = extractGlyphNameAndUnicodes(data, path.name)
                 if ignoreUnicodes:
                     unicodes = []
-                glyphNames[glyphName] = unicodes
+                glyphMap[glyphName] = unicodes
                 self.contents[glyphName] = path
                 self.glifFileNames[path.name] = glyphName
-            self.glyphMap = glyphNames
+            self.glyphMap = glyphMap
         return self.glyphMap
 
     def __contains__(self, glyphName):
