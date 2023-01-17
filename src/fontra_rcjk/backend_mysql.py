@@ -257,8 +257,9 @@ class RCJKMySQLBackend:
 
 def getUpdatedTimeStamp(info):
     timeStamp = info["updated_at"]
-    if info["layers_updated_at"]:
-        timeStamp = max(timeStamp, info["layers_updated_at"])
+    layers_updated_at = info.get("layers_updated_at")
+    if layers_updated_at:
+        timeStamp = max(timeStamp, layers_updated_at)
     return timeStamp
 
 
