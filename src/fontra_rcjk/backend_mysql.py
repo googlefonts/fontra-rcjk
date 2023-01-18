@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta
 import logging
 from random import random
+from fontra.backends.designspace import makeGlyphMapChange
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -13,6 +14,20 @@ from .client import HTTPError
 
 
 logger = logging.getLogger(__name__)
+
+
+_glyphTypes = [
+    # (typeCode, typeName)
+    ("AE", "atomic_elements"),
+    ("DC", "deep_components"),
+    ("CG", "character_glyphs"),
+]
+
+_baseGlyphMethods = {
+    "AE": "atomic_element_",
+    "DC": "deep_component_",
+    "CG": "character_glyph_",
+}
 
 
 class RCJKMySQLBackend:
@@ -36,26 +51,20 @@ class RCJKMySQLBackend:
         self._tempFontItemsCache.cancel()
 
     async def getGlyphMap(self):
-        self._rcjkGlyphInfo = {}
+        if self._glyphMap is None:
+            self._glyphMap, self._rcjkGlyphInfo = await self._getGlyphMap()
+        return dict(self._glyphMap)
+
+    async def _getGlyphMap(self):
+        rcjkGlyphInfo = {}
         glyphMap = {}
         response = await self.client.glif_list(self.fontUID)
-        glyphTypes = [
-            ("AE", "atomic_elements"),
-            ("DC", "deep_components"),
-            ("CG", "character_glyphs"),
-        ]
-        for typeCode, typeName in glyphTypes:
+        for typeCode, typeName in _glyphTypes:
             for glyphInfo in response["data"][typeName]:
-                unicode_hex = glyphInfo.get("unicode_hex")
-                if unicode_hex:
-                    unicodes = [int(unicode_hex, 16)]
-                else:
-                    unicodes = []
-                glyphMap[glyphInfo["name"]] = unicodes
-                self._rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
+                glyphMap[glyphInfo["name"]] = _unicodesFromGlyphInfo(glyphInfo)
+                rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
         # TODO: self._glyphMap should be a cache once we know how to invalidate
-        self._glyphMap = glyphMap
-        return glyphMap
+        return glyphMap, rcjkGlyphInfo
 
     async def _getMiscFontItems(self):
         if not hasattr(self, "_getMiscFontItemsTask"):
@@ -98,6 +107,8 @@ class RCJKMySQLBackend:
         return fontLib
 
     async def getGlyph(self, glyphName):
+        if self._glyphMap is not None and glyphName not in self._glyphMap:
+            return None
         layerGlyphs = await self._getLayerGlyphs(glyphName)
         axisDefaults = getComponentAxisDefaults(layerGlyphs, self._glyphCache)
         return serializeGlyph(layerGlyphs, axisDefaults)
@@ -206,14 +217,14 @@ class RCJKMySQLBackend:
         errorDelay = 30
         while True:
             try:
-                glyphNames = await self._pollOnceForChanges()
+                externalChange, reloadPattern = await self._pollOnceForChanges()
             except Exception as e:
                 logger.error("error while polling for changes: %r", e)
                 logger.info(f"pausing the poll loop for {errorDelay} seconds")
                 await asyncio.sleep(errorDelay)
             else:
-                if glyphNames:
-                    yield None, {"glyphs": dict.fromkeys(glyphNames)}
+                if externalChange or reloadPattern:
+                    yield externalChange, reloadPattern
 
     async def _pollOnceForChanges(self):
         await asyncio.wait(
@@ -236,14 +247,30 @@ class RCJKMySQLBackend:
         )
         responseData = response["data"]
         glyphNames = set()
+        glyphMapUpdates = {}
         latestTimeStamp = ""  # less than any timestamp string
-        for k in ["atomic_elements", "character_glyphs", "deep_components"]:
-            for glyphInfo in responseData[k]:
+        for typeCode, typeName in _glyphTypes:
+            for glyphInfo in responseData[typeName]:
                 glyphName = glyphInfo["name"]
                 glyphUpdatedAt = getUpdatedTimeStamp(glyphInfo)
                 latestTimeStamp = max(latestTimeStamp, glyphUpdatedAt)
+
                 if glyphUpdatedAt == self._glyphTimeStamps.get(glyphName):
+                    # We made this change, or otherwise we already saw it
                     continue
+
+                if glyphName not in self._rcjkGlyphInfo:
+                    assert glyphName not in self._glyphMap
+                    logger.info(f"New glyph {glyphName}")
+                    self._rcjkGlyphInfo[glyphName] = (typeCode, glyphInfo["id"])
+                else:
+                    assert glyphName in self._glyphMap
+
+                unicodes = _unicodesFromGlyphInfo(glyphInfo)
+                if unicodes != self._glyphMap.get(glyphName):
+                    self._glyphMap[glyphName] = unicodes
+                    glyphMapUpdates[glyphName] = unicodes
+
                 glyphNames.add(glyphName)
                 self._glyphCache.pop(glyphName, None)
 
@@ -252,7 +279,14 @@ class RCJKMySQLBackend:
 
         self._lastPolledForChanges = latestTimeStamp
 
-        return glyphNames
+        reloadPattern = {"glyphs": dict.fromkeys(glyphNames)} if glyphNames else None
+        externalChange = makeGlyphMapChange(glyphMapUpdates)
+        return externalChange, reloadPattern
+
+
+def _unicodesFromGlyphInfo(glyphInfo):
+    unicode_hex = glyphInfo.get("unicode_hex")
+    return [int(unicode_hex, 16)] if unicode_hex else []
 
 
 def getUpdatedTimeStamp(info):
@@ -272,13 +306,6 @@ def buildLayerGlyphs(glyphData):
     for layerName, glifData in layerGLIFData:
         layerGlyphs[layerName] = GLIFGlyph.fromGLIFData(glifData)
     return layerGlyphs
-
-
-_baseGlyphMethods = {
-    "AE": "atomic_element_",
-    "DC": "deep_component_",
-    "CG": "character_glyph_",
-}
 
 
 def _getFullMethodName(typeCode, methodName):
