@@ -237,10 +237,10 @@ class RCJKMySQLBackend:
         self._pollNowEvent.clear()
         if self._lastPolledForChanges is None:
             # No glyphs have been requested, so there's nothing to update
-            return
+            return None, None
         if self._writingChanges:
             # We're in the middle of writing changes, let's skip a round
-            return
+            return None, None
         response = await self.client.glif_list(
             self.fontUID,
             updated_since=fudgeTimeStamp(self._lastPolledForChanges),
