@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
@@ -77,7 +78,7 @@ class GLIFGlyph:
 
     def serialize(self):
         return StaticGlyph(
-            xAdvance=self.width, path=self.path, components=list(self.components)
+            xAdvance=self.width, path=deepcopy(self.path), components=deepcopy(self.components)
         )
 
 
