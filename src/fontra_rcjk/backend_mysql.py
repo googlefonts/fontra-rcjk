@@ -45,6 +45,7 @@ class RCJKMySQLBackend:
         self._glyphTimeStamps = {}
         self._pollNowEvent = asyncio.Event()
         self._glyphMap = None
+        self._defaultLocation = None
         return self
 
     def close(self):
@@ -86,6 +87,7 @@ class RCJKMySQLBackend:
     async def getGlobalAxes(self):
         axes = self._tempFontItemsCache.get("axes")
         if axes is None:
+            defaultLocation = {}
             await self._getMiscFontItems()
             designspace = self._tempFontItemsCache["designspace"]
             axes = [dict(axis) for axis in designspace.get("axes", ())]
@@ -93,8 +95,16 @@ class RCJKMySQLBackend:
                 axis["label"] = axis["name"]
                 axis["name"] = axis["tag"]
                 del axis["tag"]
+                defaultLocation[axis["name"]] = axis["defaultValue"]
             self._tempFontItemsCache["axes"] = axes
+            self._defaultLocation = defaultLocation
         return axes
+
+    async def getDefaultLocation(self):
+        if self._defaultLocation is None:
+            _ = await self.getGlobalAxes()
+        assert self._defaultLocation is not None
+        return self._defaultLocation
 
     async def getUnitsPerEm(self):
         return 1000
@@ -141,7 +151,8 @@ class RCJKMySQLBackend:
             assert glyphID == subGlyphData["id"]
             self._populateGlyphCache(subGlyphName, subGlyphData)
 
-    async def putGlyph(self, glyphName, glyph):
+    async def putGlyph(self, glyphName, glyph, unicodes):
+        # TODO: handle unicodes
         logger.info(f"Start writing {glyphName}")
         self._writingChanges += 1
         try:
@@ -151,8 +162,9 @@ class RCJKMySQLBackend:
             logger.info(f"Done writing {glyphName}")
 
     async def _putGlyph(self, glyphName, glyph):
+        defaultLocation = await self.getDefaultLocation()
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self._glyphMap.get(glyphName, [])
+            glyphName, glyph, self._glyphMap.get(glyphName, []), defaultLocation
         )
         typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
         if glyphID is None:

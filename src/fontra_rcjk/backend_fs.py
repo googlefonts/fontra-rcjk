@@ -35,8 +35,13 @@ class RCJKBackend:
         designspacePath = self.path / "designspace.json"
         if designspacePath.is_file():
             self.designspace = json.loads(designspacePath.read_bytes())
+            self._defaultLocation = {
+                axis["tag"]: axis["defaultValue"]
+                for axis in self.designspace.get("axes", ())
+            }
         else:
             self.designspace = {}
+            self._defaultLocation = {}
 
         self._glyphMap = {}
         for gs, hasEncoding in self._iterGlyphSets():
@@ -123,9 +128,10 @@ class RCJKBackend:
                 return gs.getGlyphLayerData(glyphName)
         return None
 
-    async def putGlyph(self, glyphName, glyph):
+    async def putGlyph(self, glyphName, glyph, unicodes):
+        # TODO: handle unicodes
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self._glyphMap.get(glyphName, [])
+            glyphName, glyph, self._glyphMap.get(glyphName, []), self._defaultLocation
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
