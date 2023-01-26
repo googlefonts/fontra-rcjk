@@ -228,10 +228,11 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     layerGlyphs = {}
     for layer in glyph.layers:
-        assert layer.name not in layerGlyphs
-        layerGlyphs[layer.name] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
-        layerGlyphs[layer.name].unicodes = unicodes
-    defaultGlyph = layerGlyphs[defaultLayerName]
+        layerName = "foreground" if layer.name == defaultLayerName else layer.name
+        assert layerName not in layerGlyphs
+        layerGlyphs[layerName] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
+        layerGlyphs[layerName].unicodes = unicodes
+    defaultGlyph = layerGlyphs["foreground"]
 
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
@@ -242,7 +243,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     variationGlyphs = []
     for source in glyph.sources:
-        if source.layerName == defaultLayerName:
+        if source.layerName == "foreground":
             # This is the default glyph, we don't treat it like a layer in .rcjk
             continue
 
