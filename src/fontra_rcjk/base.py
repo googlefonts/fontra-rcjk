@@ -20,6 +20,7 @@ class GLIFGlyph:
     def __init__(self):
         self.unicodes = []
         self.width = 0
+        self.path = None
         self.lib = {}
         self.components = []
         self.variableComponents = []
@@ -55,10 +56,15 @@ class GLIFGlyph:
         return self.asGLIFData()
 
     def hasOutlineOrClassicComponents(self):
-        return True if self.path.coordinates or self.components else False
+        return (
+            True
+            if (self.path is not None and self.path.coordinates) or self.components
+            else False
+        )
 
     def drawPoints(self, pen):
-        self.path.drawPoints(pen)
+        if self.path is not None:
+            self.path.drawPoints(pen)
         for component in self.components:
             pen.addComponent(
                 component.name,
