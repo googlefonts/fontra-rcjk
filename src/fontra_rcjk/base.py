@@ -250,7 +250,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     variationGlyphs = []
     for source in glyph.sources:
-        if source.layerName == "foreground":
+        if source.layerName == defaultLayerName:
             # This is the default glyph, we don't treat it like a layer in .rcjk
             continue
 
