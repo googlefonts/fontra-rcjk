@@ -18,6 +18,7 @@ from fontra.backends.designspace import cleanAffine, makeAffineTransform
 
 class GLIFGlyph:
     def __init__(self):
+        self.name = None  # Must be set to a string before we can write GLIF data
         self.unicodes = []
         self.width = 0
         self.path = None
