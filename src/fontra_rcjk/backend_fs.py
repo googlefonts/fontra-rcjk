@@ -2,6 +2,7 @@ import json
 import os
 import pathlib
 import watchfiles
+from fontTools.ufoLib.filenames import userNameToFileName
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
 from .base import (
     GLIFGlyph,
@@ -219,10 +220,9 @@ class RCJKGlyphSet:
     def putGlyphLayerData(self, glyphName, glyphLayerData):
         mainPath = self.contents.get(glyphName)
         if mainPath is None:
-            # fileName = userNameToFileName(glyphName, ..., ".glif")
-            # mainPath = self.path / fileName
-            # self.contents[glyphName] = mainPath
-            raise NotImplementedError("creating new glyphs is yet to be implemented")
+            fileName = userNameToFileName(glyphName, suffix=".glif")
+            mainPath = self.path / fileName
+            self.contents[glyphName] = mainPath
         assert mainPath.parent == self.path
         mainFileName = mainPath.name
 
