@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta
 import logging
 from random import random
+import traceback
 from fontra.backends.designspace import makeGlyphMapChange
 from .base import (
     GLIFGlyph,
@@ -64,7 +65,6 @@ class RCJKMySQLBackend:
             for glyphInfo in response["data"][typeName]:
                 glyphMap[glyphInfo["name"]] = _unicodesFromGlyphInfo(glyphInfo)
                 rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
-        # TODO: self._glyphMap should be a cache once we know how to invalidate
         return glyphMap, rcjkGlyphInfo
 
     async def _getMiscFontItems(self):
@@ -152,23 +152,22 @@ class RCJKMySQLBackend:
             self._populateGlyphCache(subGlyphName, subGlyphData)
 
     async def putGlyph(self, glyphName, glyph, unicodes):
-        # TODO: handle unicodes
         logger.info(f"Start writing {glyphName}")
         self._writingChanges += 1
         try:
-            return await self._putGlyph(glyphName, glyph)
+            return await self._putGlyph(glyphName, glyph, unicodes)
         finally:
             self._writingChanges -= 1
             logger.info(f"Done writing {glyphName}")
 
-    async def _putGlyph(self, glyphName, glyph):
+    async def _putGlyph(self, glyphName, glyph, unicodes):
         defaultLocation = await self.getDefaultLocation()
-        layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self._glyphMap.get(glyphName, []), defaultLocation
-        )
+        layerGlyphs = unserializeGlyph(glyphName, glyph, unicodes, defaultLocation)
 
         if glyphName not in self._rcjkGlyphInfo:
-            await self._newGlyph(glyphName)
+            await self._newGlyph(glyphName, unicodes)
+
+        self._glyphMap[glyphName] = unicodes
 
         typeCode, glyphID = self._rcjkGlyphInfo[glyphName]
 
@@ -220,7 +219,7 @@ class RCJKMySQLBackend:
 
         return errorMessage
 
-    async def _newGlyph(self, glyphName):
+    async def _newGlyph(self, glyphName, unicodes):
         # In _newGlyph() we create a new character glyph in the database.
         # _putGlyph will immediately overwrite it with the real glyph data,
         # with a lock acquired. Our dummy glyph has to have a glyph name, but
@@ -228,12 +227,14 @@ class RCJKMySQLBackend:
         # see it if anything goes wrong.
         dummyGlyph = GLIFGlyph()
         dummyGlyph.name = glyphName
+        dummyGlyph.unicodes = unicodes
         dummyGlyph.width = 314  # arbitrary positive value
         xmlData = dummyGlyph.asGLIFData()
         response = await self.client.character_glyph_create(
             self.fontUID, xmlData, return_data=False
         )
         glyphID = response["data"]["id"]
+        self._glyphMap[glyphName] = unicodes
         self._rcjkGlyphInfo[glyphName] = ("CG", glyphID)
         self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(response["data"])
 
@@ -251,6 +252,7 @@ class RCJKMySQLBackend:
                 externalChange, reloadPattern = await self._pollOnceForChanges()
             except Exception as e:
                 logger.error("error while polling for changes: %r", e)
+                traceback.print_exc()
                 logger.info(f"pausing the poll loop for {errorDelay} seconds")
                 await asyncio.sleep(errorDelay)
             else:
@@ -295,7 +297,7 @@ class RCJKMySQLBackend:
                     logger.info(f"New glyph {glyphName}")
                     self._rcjkGlyphInfo[glyphName] = (typeCode, glyphInfo["id"])
                 else:
-                    assert glyphName in self._glyphMap
+                    assert glyphName in self._glyphMap, f"glyph not found: {glyphName}"
 
                 unicodes = _unicodesFromGlyphInfo(glyphInfo)
                 if unicodes != self._glyphMap.get(glyphName):
