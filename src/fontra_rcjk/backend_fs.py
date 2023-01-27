@@ -2,6 +2,7 @@ import json
 import os
 import pathlib
 import watchfiles
+from fontTools.ufoLib.filenames import userNameToFileName
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
 from .base import (
     GLIFGlyph,
@@ -35,8 +36,13 @@ class RCJKBackend:
         designspacePath = self.path / "designspace.json"
         if designspacePath.is_file():
             self.designspace = json.loads(designspacePath.read_bytes())
+            self._defaultLocation = {
+                axis["tag"]: axis["defaultValue"]
+                for axis in self.designspace.get("axes", ())
+            }
         else:
             self.designspace = {}
+            self._defaultLocation = {}
 
         self._glyphMap = {}
         for gs, hasEncoding in self._iterGlyphSets():
@@ -123,12 +129,13 @@ class RCJKBackend:
                 return gs.getGlyphLayerData(glyphName)
         return None
 
-    async def putGlyph(self, glyphName, glyph):
+    async def putGlyph(self, glyphName, glyph, unicodes):
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, self._glyphMap.get(glyphName, [])
+            glyphName, glyph, unicodes, self._defaultLocation
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
+        self._glyphMap[glyphName] = unicodes
 
     async def getFontLib(self):
         libPath = self.path / "fontLib.json"
@@ -213,10 +220,11 @@ class RCJKGlyphSet:
     def putGlyphLayerData(self, glyphName, glyphLayerData):
         mainPath = self.contents.get(glyphName)
         if mainPath is None:
-            # fileName = userNameToFileName(glyphName, ..., ".glif")
-            # mainPath = self.path / fileName
-            # self.contents[glyphName] = mainPath
-            raise NotImplementedError("creating new glyphs is yet to be implemented")
+            fileName = userNameToFileName(glyphName, suffix=".glif")
+            mainPath = self.path / fileName
+            self.contents[glyphName] = mainPath
+            self.glifFileNames[mainPath.name] = glyphName
+
         assert mainPath.parent == self.path
         mainFileName = mainPath.name
 

@@ -18,8 +18,10 @@ from fontra.backends.designspace import cleanAffine, makeAffineTransform
 
 class GLIFGlyph:
     def __init__(self):
+        self.name = None  # Must be set to a string before we can write GLIF data
         self.unicodes = []
         self.width = 0
+        self.path = None
         self.lib = {}
         self.components = []
         self.variableComponents = []
@@ -48,17 +50,22 @@ class GLIFGlyph:
         return self
 
     def asGLIFData(self):
-        return writeGlyphToString(self.name, self, self.drawPoints)
+        return writeGlyphToString(self.name, self, self.drawPoints, validate=False)
 
     @cached_property
     def cachedGLIFData(self):
         return self.asGLIFData()
 
     def hasOutlineOrClassicComponents(self):
-        return True if self.path.coordinates or self.components else False
+        return (
+            True
+            if (self.path is not None and self.path.coordinates) or self.components
+            else False
+        )
 
     def drawPoints(self, pen):
-        self.path.drawPoints(pen)
+        if self.path is not None:
+            self.path.drawPoints(pen)
         for component in self.components:
             pen.addComponent(
                 component.name,
@@ -215,12 +222,23 @@ def convertTransformation(rcjkTransformation):
     )
 
 
-def unserializeGlyph(glyphName, glyph, unicodes):
+def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
+    defaultLayerName = None
+    for source in glyph.sources:
+        location = {**defaultLocation, **source.location}
+        if location == defaultLocation:
+            defaultLayerName = source.layerName
+            break
+    if defaultLayerName is None:
+        # TODO: better exception
+        raise AssertionError("no default source/layer found")
+
     layerGlyphs = {}
     for layer in glyph.layers:
-        assert layer.name not in layerGlyphs
-        layerGlyphs[layer.name] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
-        layerGlyphs[layer.name].unicodes = unicodes
+        layerName = "foreground" if layer.name == defaultLayerName else layer.name
+        assert layerName not in layerGlyphs
+        layerGlyphs[layerName] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
+        layerGlyphs[layerName].unicodes = unicodes
     defaultGlyph = layerGlyphs["foreground"]
 
     if glyph.axes:
@@ -232,7 +250,7 @@ def unserializeGlyph(glyphName, glyph, unicodes):
 
     variationGlyphs = []
     for source in glyph.sources:
-        if source.layerName == "foreground":
+        if source.layerName == defaultLayerName:
             # This is the default glyph, we don't treat it like a layer in .rcjk
             continue
 
