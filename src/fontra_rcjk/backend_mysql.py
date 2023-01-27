@@ -166,9 +166,11 @@ class RCJKMySQLBackend:
         layerGlyphs = unserializeGlyph(
             glyphName, glyph, self._glyphMap.get(glyphName, []), defaultLocation
         )
-        typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
-        if glyphID is None:
-            raise NotImplementedError("creating new glyphs is yet to be implemented")
+
+        if glyphName not in self._rcjkGlyphInfo:
+            await self._newGlyph(glyphName)
+
+        typeCode, glyphID = self._rcjkGlyphInfo[glyphName]
 
         try:
             lockResponse = await self._callGlyphMethod(
@@ -217,6 +219,18 @@ class RCJKMySQLBackend:
             )
 
         return errorMessage
+
+    async def _newGlyph(self, glyphName):
+        dummyGlyph = GLIFGlyph()
+        dummyGlyph.name = glyphName
+        dummyGlyph.width = 314
+        xmlData = dummyGlyph.asGLIFData()
+        response = await self.client.character_glyph_create(
+            self.fontUID, xmlData, return_data=False
+        )
+        glyphID = response["data"]["id"]
+        self._rcjkGlyphInfo[glyphName] = ("CG", glyphID)
+        self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(response["data"])
 
     async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
         typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
