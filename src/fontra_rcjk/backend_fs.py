@@ -223,6 +223,8 @@ class RCJKGlyphSet:
             fileName = userNameToFileName(glyphName, suffix=".glif")
             mainPath = self.path / fileName
             self.contents[glyphName] = mainPath
+            self.glifFileNames[mainPath.name] = glyphName
+
         assert mainPath.parent == self.path
         mainFileName = mainPath.name
 
