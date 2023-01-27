@@ -50,7 +50,7 @@ class GLIFGlyph:
         return self
 
     def asGLIFData(self):
-        return writeGlyphToString(self.name, self, self.drawPoints)
+        return writeGlyphToString(self.name, self, self.drawPoints, validate=False)
 
     @cached_property
     def cachedGLIFData(self):
