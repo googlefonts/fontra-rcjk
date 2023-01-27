@@ -221,9 +221,14 @@ class RCJKMySQLBackend:
         return errorMessage
 
     async def _newGlyph(self, glyphName):
+        # In _newGlyph() we create a new character glyph in the database.
+        # _putGlyph will immediately overwrite it with the real glyph data,
+        # with a lock acquired. Our dummy glyph has to have a glyph name, but
+        # we're setting .width to an arbitrary positive value so we can still
+        # see it if anything goes wrong.
         dummyGlyph = GLIFGlyph()
         dummyGlyph.name = glyphName
-        dummyGlyph.width = 314
+        dummyGlyph.width = 314  # arbitrary positive value
         xmlData = dummyGlyph.asGLIFData()
         response = await self.client.character_glyph_create(
             self.fontUID, xmlData, return_data=False
