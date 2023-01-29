@@ -80,9 +80,11 @@ class RCJKProjectManager:
             return None
         return token
 
-    async def projectPageHandler(self, request):
+    async def projectPageHandler(self, request, filterContent=None):
         token = await self.authorize(request)
         html = resources.read_text("fontra_rcjk", "landing.html")
+        if filterContent is not None:
+            html = filterContent(html, "text/html")
         response = web.Response(text=html, content_type="text/html")
 
         if token:
