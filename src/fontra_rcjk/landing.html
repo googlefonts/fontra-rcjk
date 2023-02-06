@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8"/>
+    <meta charset="utf-8" />
     <title>Fontra</title>
-    <link href="/css/core.css" rel="stylesheet">
-    <link href="/filesystem/landing.css" rel="stylesheet">
+    <link href="/css/core.css" rel="stylesheet" />
+    <link href="/filesystem/landing.css" rel="stylesheet" />
   </head>
   <body class="landing-body">
-
     <div id="global-loader-spinner"></div>
 
     <div class="landing-content">
-
       <div class="landing-item" id="fontra-icon-header">
-        <img src="/images/fontra-icon.svg" width="100" height="100">
+        <img src="/images/fontra-icon.svg" width="100" height="100" />
         <div>
           <a href="/settings.html">Edit Settings...</a>
         </div>
       </div>
 
       <div class="landing-item hidden" id="login-form-container">
-
         <form action="/login" method="post" id="login-form">
-
           <label for="login-username" class="login-label">Username:</label>
           <input
             type="text"
@@ -31,7 +27,8 @@
             class="login-input login-username"
             id="login-username"
             tabindex="1"
-            required>
+            required
+          />
           <label for="login-password" class="login-label">Password:</label>
           <input
             type="password"
@@ -40,32 +37,26 @@
             class="login-input login-password"
             id="login-password"
             tabindex="2"
-            required>
+            required
+          />
           <button type="submit" class="login-button">Log in</button>
           <div class="hidden" id="login-failure-message">Login failed</div>
-
         </form>
-
       </div>
 
       <div class="landing-item hidden" id="logout-form-container">
-
         <form action="/logout" method="post" id="logout-form">
-          <button type="submit" class="logout-button" id="logout-button">Log out</button>
+          <button type="submit" class="logout-button" id="logout-button">
+            Log out
+          </button>
         </form>
-
       </div>
 
-      <div class="landing-item hidden" id="project-list" tabindex="3">
-      </div>
-
+      <div class="landing-item hidden" id="project-list" tabindex="3"></div>
     </div>
-  </div>
   </body>
   <script type="module">
-
     import { startupRCJKLandingPage } from "/rcjk/landing.js";
     startupRCJKLandingPage();
-
   </script>
 </html>
