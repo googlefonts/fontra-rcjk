@@ -3,11 +3,9 @@ import { getRemoteProxy } from "/core/remote.js";
 import { parseCookies, themeSwitchFromLocalStorage } from "/core/utils.js";
 import { startupLandingPage } from "/filesystem/landing.js";
 
-
 export function startupRCJKLandingPage() {
   startupLandingPage(rcjkAuthenticateFunc);
 }
-
 
 function rcjkAuthenticateFunc() {
   const cookies = parseCookies(document.cookie);
