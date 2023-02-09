@@ -1,13 +1,14 @@
-from importlib import resources
 import logging
 import secrets
+from importlib import resources
 from urllib.parse import parse_qs
+
 from aiohttp import web
+from fontra.core.fonthandler import FontHandler
+
 from .backend_mysql import RCJKMySQLBackend
 from .client import HTTPError
 from .client_async import RCJKClientAsync
-from fontra.core.fonthandler import FontHandler
-
 
 logger = logging.getLogger(__name__)
 

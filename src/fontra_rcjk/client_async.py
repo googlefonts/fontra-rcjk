@@ -1,5 +1,7 @@
 import aiohttp
-from .client import Client as RCJKClient, HTTPError
+
+from .client import Client as RCJKClient
+from .client import HTTPError
 
 
 class RCJKClientAsync(RCJKClient):

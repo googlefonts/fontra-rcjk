@@ -1,9 +1,11 @@
 import json
 import os
 import pathlib
+
 import watchfiles
-from fontTools.ufoLib.filenames import userNameToFileName
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
+from fontTools.ufoLib.filenames import userNameToFileName
+
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -11,7 +13,6 @@ from .base import (
     serializeGlyph,
     unserializeGlyph,
 )
-
 
 glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
 
@@ -130,9 +131,7 @@ class RCJKBackend:
         return None
 
     async def putGlyph(self, glyphName, glyph, unicodes):
-        layerGlyphs = unserializeGlyph(
-            glyphName, glyph, unicodes, self._defaultLocation
-        )
+        layerGlyphs = unserializeGlyph(glyphName, glyph, unicodes, self._defaultLocation)
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
         self._glyphMap[glyphName] = unicodes
