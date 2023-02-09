@@ -44,6 +44,24 @@ rcjk = "fontra_rcjk"
 rcjk = "fontra_rcjk.backend_fs:RCJKBackend"
 
 
+[tool.black]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | venv
+)/
+'''
+
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/fontra_rcjk"]
 
