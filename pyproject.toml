@@ -45,6 +45,7 @@ rcjk = "fontra_rcjk.backend_fs:RCJKBackend"
 
 
 [tool.black]
+line-length = 89
 include = '\.pyi?$'
 exclude = '''
 /(
