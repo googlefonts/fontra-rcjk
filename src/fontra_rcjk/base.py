@@ -223,7 +223,7 @@ def convertTransformation(rcjkTransformation):
     )
 
 
-def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):  # noqa: C901
+def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
     defaultLayerName = None
     for source in glyph.sources:
         location = {**defaultLocation, **source.location}
