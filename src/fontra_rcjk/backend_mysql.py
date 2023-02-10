@@ -1,9 +1,11 @@
 import asyncio
-from datetime import datetime, timedelta
 import logging
-from random import random
 import traceback
+from datetime import datetime, timedelta
+from random import random
+
 from fontra.backends.designspace import makeGlyphMapChange
+
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -12,7 +14,6 @@ from .base import (
     unserializeGlyph,
 )
 from .client import HTTPError
-
 
 logger = logging.getLogger(__name__)
 

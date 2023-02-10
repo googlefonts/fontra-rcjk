@@ -1,9 +1,11 @@
 import json
 import os
 import pathlib
+
 import watchfiles
-from fontTools.ufoLib.filenames import userNameToFileName
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
+from fontTools.ufoLib.filenames import userNameToFileName
+
 from .base import (
     GLIFGlyph,
     TimedCache,
@@ -11,7 +13,6 @@ from .base import (
     serializeGlyph,
     unserializeGlyph,
 )
-
 
 glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
 

@@ -2,7 +2,8 @@ import asyncio
 from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
-from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
+
+from fontra.backends.designspace import cleanAffine, makeAffineTransform
 from fontra.core.classes import (
     Component,
     Layer,
@@ -13,7 +14,7 @@ from fontra.core.classes import (
     VariableGlyph,
 )
 from fontra.core.packedpath import PackedPathPointPen
-from fontra.backends.designspace import cleanAffine, makeAffineTransform
+from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
 
 class GLIFGlyph:
