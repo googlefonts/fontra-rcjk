@@ -319,8 +319,7 @@ class RCJKMySQLBackend:
 
 
 def _unicodesFromGlyphInfo(glyphInfo):
-    unicode_hex = glyphInfo.get("unicode_hex")
-    return [int(unicode_hex, 16)] if unicode_hex else []
+    return glyphInfo.get("unicodes", [])
 
 
 def getUpdatedTimeStamp(info):
