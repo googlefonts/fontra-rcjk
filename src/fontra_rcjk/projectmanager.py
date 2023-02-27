@@ -63,7 +63,6 @@ class RCJKProjectManager:
         else:
             response.set_cookie("fontra-authorization-failed", "true", max_age=5)
             response.del_cookie("fontra-authorization-token")
-        response.set_cookie("fontra-version-token", str(self.startupTime))
         return response
 
     async def logoutHandler(self, request):
