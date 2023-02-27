@@ -95,7 +95,6 @@ class RCJKProjectManager:
         else:
             response.del_cookie("fontra-authorization-token")
 
-        response.set_cookie("fontra-require-login", "true")
         return response
 
     async def login(self, username, password):
