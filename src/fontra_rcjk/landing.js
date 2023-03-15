@@ -15,11 +15,12 @@ function rcjkAuthenticateFunc() {
   const logoutButton = document.querySelector("#logout-button");
   const loginFailureMessage = document.querySelector("#login-failure-message");
 
-  const username = decodeURI(cookies["fontra-username"], "UTF-8");
+  const username = cookies["fontra-username"];
   const haveToken = !!cookies["fontra-authorization-token"];
   const loginFailed = cookies["fontra-authorization-failed"] == "true";
 
   if (username) {
+    username = decodeURI(username, "UTF-8");
     const usernameField = document.querySelector("#login-username");
     usernameField.value = username;
   }
