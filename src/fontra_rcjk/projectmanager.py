@@ -1,7 +1,7 @@
 import logging
 import secrets
 from importlib import resources
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 
 from aiohttp import web
 from fontra.core.fonthandler import FontHandler
@@ -51,10 +51,9 @@ class RCJKProjectManager:
         username = formContent["username"][0]
         password = formContent["password"][0]
         token = await self.login(username, password)
-
         destination = request.query.get("ref", "/")
         response = web.HTTPFound(destination)
-        response.set_cookie("fontra-username", username, max_age=self.cookieMaxAge)
+        response.set_cookie("fontra-username", quote(username), max_age=self.cookieMaxAge)
         if token is not None:
             response.set_cookie(
                 "fontra-authorization-token", token, max_age=self.cookieMaxAge

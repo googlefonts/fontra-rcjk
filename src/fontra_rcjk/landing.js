@@ -16,6 +16,7 @@ function rcjkAuthenticateFunc() {
   const loginFailureMessage = document.querySelector("#login-failure-message");
 
   const username = cookies["fontra-username"];
+  console.log(decodeURI(username, "UTF-8"));
   const haveToken = !!cookies["fontra-authorization-token"];
   const loginFailed = cookies["fontra-authorization-failed"] == "true";
 
