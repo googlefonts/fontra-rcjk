@@ -51,6 +51,7 @@ class RCJKProjectManager:
         username = formContent["username"][0]
         password = formContent["password"][0]
         token = await self.login(username, password)
+
         destination = request.query.get("ref", "/")
         response = web.HTTPFound(destination)
         response.set_cookie(
