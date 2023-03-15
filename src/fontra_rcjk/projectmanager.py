@@ -53,7 +53,9 @@ class RCJKProjectManager:
         token = await self.login(username, password)
         destination = request.query.get("ref", "/")
         response = web.HTTPFound(destination)
-        response.set_cookie("fontra-username", quote(username), max_age=self.cookieMaxAge)
+        response.set_cookie(
+            "fontra-username", quote(username), max_age=self.cookieMaxAge
+        )
         if token is not None:
             response.set_cookie(
                 "fontra-authorization-token", token, max_age=self.cookieMaxAge
