@@ -53,6 +53,7 @@ class RCJKProjectManager:
         token = await self.login(username, password)
         destination = request.query.get("ref", "/")
         response = web.HTTPFound(destination)
+        username = "test@%"
         response.set_cookie(
             "fontra-username", quote(username), max_age=self.cookieMaxAge
         )
