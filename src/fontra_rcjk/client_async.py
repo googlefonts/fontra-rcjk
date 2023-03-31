@@ -11,9 +11,7 @@ class RCJKClientAsync(RCJKClient):
         pass
 
     async def connect(self):
-        self._session = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)
-        )
+        self._session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False))
         session = await self._session.__aenter__()
         assert session is self._session
 
