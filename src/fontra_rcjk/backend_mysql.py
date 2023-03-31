@@ -263,8 +263,10 @@ class RCJKMySQLBackend:
     async def _pollOnceForChanges(self):
         await asyncio.wait(
             [
-                asyncio.sleep(self.pollExternalChangesInterval + 2 * random()),
-                self._pollNowEvent.wait(),
+                asyncio.create_task(
+                    asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
+                ),
+                asyncio.create_task(self._pollNowEvent.wait()),
             ],
             return_when=asyncio.FIRST_COMPLETED,
         )
