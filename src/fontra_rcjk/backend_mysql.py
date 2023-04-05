@@ -212,16 +212,13 @@ class RCJKMySQLBackend:
                         return_data=False,
                         return_layers=False,
                     )
-                for existingLayerName in existingLayerData:
-                    if existingLayerName not in layerGlyphs:
-                        logger.info(
-                            f"Deleting layer {existingLayerName} of {glyphName}"
-                        )
-                        await self._callGlyphMethod(
-                            glyphName,
-                            "layer_delete",
-                            existingLayerName,
-                        )
+                for layerName in set(existingLayerData) - set(layerGlyphs):
+                    logger.info(f"Deleting layer {layerName} of {glyphName}")
+                    await self._callGlyphMethod(
+                        glyphName,
+                        "layer_delete",
+                        layerName,
+                    )
                 self._glyphCache[glyphName] = layerGlyphs
         finally:
             unlockResponse = await self._callGlyphMethod(
