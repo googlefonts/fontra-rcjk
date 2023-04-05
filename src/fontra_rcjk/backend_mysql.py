@@ -309,9 +309,8 @@ class RCJKMySQLBackend:
                 del self._rcjkGlyphInfo[glyphName]
                 latestTimeStamp = max(latestTimeStamp, glyphInfo["deleted_at"])
             # else:
-            # A layer got deleted, but we also receive that glyph as
-            # a regular changed glyph, via its layer_updated_at
-            # timestamp. We can ignore here.
+            # A layer got deleted, but we also receive that glyph as a regular changed
+            # glyph, via its layers_updated_at timestamp -- we should ignore here.
 
         for typeCode, typeName in _glyphTypes:
             for glyphInfo in responseData[typeName]:
