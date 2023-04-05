@@ -167,6 +167,12 @@ class RCJKMySQLBackend:
 
         if glyphName not in self._rcjkGlyphInfo:
             await self._newGlyph(glyphName, unicodes)
+            existingLayerData = {}
+        else:
+            existingLayerData = {
+                k: v.cachedGLIFData
+                for k, v in (await self._getLayerGlyphs(glyphName)).items()
+            }
 
         self._glyphMap[glyphName] = unicodes
 
@@ -187,23 +193,31 @@ class RCJKMySQLBackend:
             if glyphTimeStamp != currentTimeStamp:
                 errorMessage = "Someone else made an edit just before you."
             else:
-                existingLayerData = {
-                    k: v.cachedGLIFData
-                    for k, v in self._glyphCache.get(glyphName, {}).items()
-                }
                 for layerName, layerGlyph in layerGlyphs.items():
                     xmlData = layerGlyph.asGLIFData()
-                    if xmlData == existingLayerData.get(layerName):
+                    existingXMLData = existingLayerData.get(layerName)
+                    if xmlData == existingXMLData:
                         # There was no change in the xml data, skip the update
                         continue
                     if layerName == "foreground":
                         args = (glyphName, "update", xmlData)
                     else:
-                        args = (glyphName, "layer_update", layerName, xmlData)
+                        methodName = "layer_update"
+                        if existingXMLData is None:
+                            logger.info(f"Creating layer {layerName} of {glyphName}")
+                            methodName = "layer_create"
+                        args = (glyphName, methodName, layerName, xmlData)
                     await self._callGlyphMethod(
                         *args,
                         return_data=False,
                         return_layers=False,
+                    )
+                for layerName in set(existingLayerData) - set(layerGlyphs):
+                    logger.info(f"Deleting layer {layerName} of {glyphName}")
+                    await self._callGlyphMethod(
+                        glyphName,
+                        "layer_delete",
+                        layerName,
                     )
                 self._glyphCache[glyphName] = layerGlyphs
         finally:
@@ -288,20 +302,15 @@ class RCJKMySQLBackend:
 
         for glyphInfo in responseData.get("deleted_glifs", []):
             glyphName = glyphInfo["name"]
-            glyphDeletedAt = glyphInfo["deleted_at"]
-            if glyphInfo["group_name"]:
-                # A layer got deleted, treat as regular change by appending the
-                # (tweaked) change into the appropriate list
-                typeName = glyphInfo["glif_type"] + "s"
-                responseData[typeName].append(
-                    {**glyphInfo, "updated_at": glyphDeletedAt}
-                )
-            else:
+            if not glyphInfo["group_name"]:
                 logger.info(f"Found deleted glyph {glyphName}")
                 glyphMapUpdates[glyphName] = None
                 del self._glyphMap[glyphName]
                 del self._rcjkGlyphInfo[glyphName]
-                latestTimeStamp = max(latestTimeStamp, glyphDeletedAt)
+                latestTimeStamp = max(latestTimeStamp, glyphInfo["deleted_at"])
+            # else:
+            # A layer got deleted, but we also receive that glyph as a regular changed
+            # glyph, via its layers_updated_at timestamp -- we should ignore here.
 
         for typeCode, typeName in _glyphTypes:
             for glyphInfo in responseData[typeName]:
