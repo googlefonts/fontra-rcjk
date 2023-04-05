@@ -285,6 +285,24 @@ class RCJKMySQLBackend:
         glyphNames = set()
         glyphMapUpdates = {}
         latestTimeStamp = ""  # less than any timestamp string
+
+        for glyphInfo in responseData.get("deleted_glifs", []):
+            glyphName = glyphInfo["name"]
+            glyphDeletedAt = glyphInfo["deleted_at"]
+            if glyphInfo["group_name"]:
+                # A layer got deleted, treat as regular change by appending the
+                # (tweaked) change into the appropriate list
+                typeName = glyphInfo["glif_type"] + "s"
+                responseData[typeName].append(
+                    {**glyphInfo, "updated_at": glyphDeletedAt}
+                )
+            else:
+                logger.info(f"Found deleted glyph {glyphName}")
+                glyphMapUpdates[glyphName] = None
+                del self._glyphMap[glyphName]
+                del self._rcjkGlyphInfo[glyphName]
+                latestTimeStamp = max(latestTimeStamp, glyphDeletedAt)
+
         for typeCode, typeName in _glyphTypes:
             for glyphInfo in responseData[typeName]:
                 glyphName = glyphInfo["name"]
