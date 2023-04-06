@@ -1,3 +1,5 @@
+import asyncio
+
 import aiohttp
 
 from .client import Client as RCJKClient
@@ -29,7 +31,11 @@ class RCJKClientAsync(RCJKClient):
         await self.auth_token()
 
     async def close(self):
-        await self._session.__aexit__(None, None, None)
+        await self._session.close()
+        # Workaround for:
+        # - https://github.com/aio-libs/aiohttp/issues/1925
+        # - https://github.com/aio-libs/aiohttp/issues/6071
+        await asyncio.sleep(0.05)
 
     async def get_project_font_uid_mapping(self):
         project_font_uid_mapping = {}
