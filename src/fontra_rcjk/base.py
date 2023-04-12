@@ -17,6 +17,10 @@ from fontra.core.packedpath import PackedPathPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
 
+class RCJKFormatError(Exception):
+    pass
+
+
 class GLIFGlyph:
     def __init__(self):
         self.name = None  # Must be set to a string before we can write GLIF data
@@ -245,7 +249,8 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
 
-    deepComponents = unserializeComponents(defaultGlyph.variableComponents, True)
+    deepComponents = unserializeComponents(defaultGlyph.variableComponents)
+    deepComponentNames = [dc["name"] for dc in deepComponents]
     if deepComponents:
         defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
 
@@ -260,7 +265,9 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
 
-        deepComponents = unserializeComponents(layerGlyph.variableComponents, False)
+        deepComponents = unserializeComponents(
+            layerGlyph.variableComponents, deepComponentNames
+        )
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
@@ -280,12 +287,21 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
     return layerGlyphs
 
 
-def unserializeComponents(variableComponents, addNames):
+def unserializeComponents(variableComponents, referenceNames=None):
+    addNames = True
+    if referenceNames is None:
+        referenceNames = [None] * len(variableComponents)
+    else:
+        if len(variableComponents) != len(referenceNames):
+            raise RCJKFormatError("variation has an incompatible number of components")
+        addNames = False
     components = []
-    for compo in variableComponents:
+    for compo, refName in zip(variableComponents, referenceNames):
         if addNames:
             compoDict = dict(name=compo.name)
         else:
+            if compo.name != refName:
+                raise RCJKFormatError("variation has incompatible components")
             compoDict = {}
         compoDict.update(
             coord=compo.location,
