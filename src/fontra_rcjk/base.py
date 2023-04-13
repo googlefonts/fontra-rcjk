@@ -242,7 +242,6 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
 
     deepComponents = unserializeComponents(defaultGlyph.variableComponents)
-    deepComponentNames = [dc["name"] for dc in deepComponents]
     if deepComponents:
         defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
 
@@ -257,9 +256,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
 
-        deepComponents = unserializeComponents(
-            layerGlyph.variableComponents, deepComponentNames
-        )
+        deepComponents = unserializeComponents(layerGlyph.variableComponents)
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
