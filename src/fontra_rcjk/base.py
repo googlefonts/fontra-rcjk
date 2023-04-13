@@ -17,10 +17,6 @@ from fontra.core.packedpath import PackedPathPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
 
-class RCJKFormatError(Exception):
-    pass
-
-
 class GLIFGlyph:
     def __init__(self):
         self.name = None  # Must be set to a string before we can write GLIF data
