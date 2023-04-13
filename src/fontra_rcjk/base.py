@@ -135,7 +135,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 
     dcNames = [c.name for c in defaultComponents]
     defaultComponentLocations = [compo.location for compo in defaultComponents]
-    componentNames = [c.name for c in layers["foreground"].glyph.components]
 
     sources = [Source(name="<default>", layerName="foreground")]
     variationGlyphData = defaultGlyph.lib.get("robocjk.variationGlyphs", ())
@@ -172,7 +171,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
         if components:
             layerGlyph.components = components
 
-        assert componentNames == [c.name for c in layerGlyph.components]
         location = varDict["location"]
         sources.append(Source(name=sourceName, location=location, layerName=layerName))
 
@@ -187,8 +185,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 def serializeComponents(
     deepComponents, axisDefaults, dcNames, neutralComponentLocations
 ):
-    if dcNames is not None:
-        assert len(deepComponents) == len(dcNames)
     if neutralComponentLocations is None:
         neutralComponentLocations = [{}] * len(deepComponents)
     components = []
@@ -287,22 +283,10 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
     return layerGlyphs
 
 
-def unserializeComponents(variableComponents, referenceNames=None):
-    addNames = True
-    if referenceNames is None:
-        referenceNames = [None] * len(variableComponents)
-    else:
-        if len(variableComponents) != len(referenceNames):
-            raise RCJKFormatError("variation has an incompatible number of components")
-        addNames = False
+def unserializeComponents(variableComponents):
     components = []
-    for compo, refName in zip(variableComponents, referenceNames):
-        if addNames:
-            compoDict = dict(name=compo.name)
-        else:
-            if compo.name != refName:
-                raise RCJKFormatError("variation has incompatible components")
-            compoDict = {}
+    for compo in variableComponents:
+        compoDict = dict(name=compo.name)
         compoDict.update(
             coord=compo.location,
             transform=unconvertTransformation(compo.transformation),
