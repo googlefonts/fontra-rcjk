@@ -17,10 +17,6 @@ from fontra.core.packedpath import PackedPathPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
 
-class RCJKFormatError(Exception):
-    pass
-
-
 class GLIFGlyph:
     def __init__(self):
         self.name = None  # Must be set to a string before we can write GLIF data
@@ -135,7 +131,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 
     dcNames = [c.name for c in defaultComponents]
     defaultComponentLocations = [compo.location for compo in defaultComponents]
-    componentNames = [c.name for c in layers["foreground"].glyph.components]
 
     sources = [Source(name="<default>", layerName="foreground")]
     variationGlyphData = defaultGlyph.lib.get("robocjk.variationGlyphs", ())
@@ -172,7 +167,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
         if components:
             layerGlyph.components = components
 
-        assert componentNames == [c.name for c in layerGlyph.components]
         location = varDict["location"]
         sources.append(Source(name=sourceName, location=location, layerName=layerName))
 
@@ -187,8 +181,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 def serializeComponents(
     deepComponents, axisDefaults, dcNames, neutralComponentLocations
 ):
-    if dcNames is not None:
-        assert len(deepComponents) == len(dcNames)
     if neutralComponentLocations is None:
         neutralComponentLocations = [{}] * len(deepComponents)
     components = []
@@ -250,7 +242,6 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
 
     deepComponents = unserializeComponents(defaultGlyph.variableComponents)
-    deepComponentNames = [dc["name"] for dc in deepComponents]
     if deepComponents:
         defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
 
@@ -265,9 +256,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
 
-        deepComponents = unserializeComponents(
-            layerGlyph.variableComponents, deepComponentNames
-        )
+        deepComponents = unserializeComponents(layerGlyph.variableComponents)
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
@@ -287,22 +276,10 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
     return layerGlyphs
 
 
-def unserializeComponents(variableComponents, referenceNames=None):
-    addNames = True
-    if referenceNames is None:
-        referenceNames = [None] * len(variableComponents)
-    else:
-        if len(variableComponents) != len(referenceNames):
-            raise RCJKFormatError("variation has an incompatible number of components")
-        addNames = False
+def unserializeComponents(variableComponents):
     components = []
-    for compo, refName in zip(variableComponents, referenceNames):
-        if addNames:
-            compoDict = dict(name=compo.name)
-        else:
-            if compo.name != refName:
-                raise RCJKFormatError("variation has incompatible components")
-            compoDict = {}
+    for compo in variableComponents:
+        compoDict = dict(name=compo.name)
         compoDict.update(
             coord=compo.location,
             transform=unconvertTransformation(compo.transformation),
