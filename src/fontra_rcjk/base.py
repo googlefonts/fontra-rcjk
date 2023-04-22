@@ -231,8 +231,9 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         raise AssertionError("no default source/layer found")
 
     layerGlyphs = {}
-    for layer in glyph.layers:
-        layerName = "foreground" if layer.name == defaultLayerName else layer.name
+    for layerName, layer in glyph.layers.items():
+        if layerName == defaultLayerName:
+            layerName = "foreground"
         assert layerName not in layerGlyphs
         layerGlyphs[layerName] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
         layerGlyphs[layerName].unicodes = unicodes
