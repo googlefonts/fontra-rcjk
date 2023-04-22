@@ -118,7 +118,7 @@ def getComponentAxisDefaults(layerGlyphs, layerGlyphCache):
 
 def serializeGlyph(layerGlyphs, axisDefaults):
     layers = {
-        layerName: Layer(name=layerName, glyph=glyph.serialize())
+        layerName: Layer(glyph=glyph.serialize())
         for layerName, glyph in layerGlyphs.items()
     }
 
@@ -152,7 +152,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             xAdvance = layerGlyphs[layerName].width
         else:
             layerGlyph = StaticGlyph()
-            layers[layerName] = Layer(name=layerName, glyph=layerGlyph)
+            layers[layerName] = Layer(glyph=layerGlyph)
 
         if "width" in varDict:
             xAdvance = varDict["width"]
@@ -174,7 +174,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
         name=defaultGlyph.name,
         axes=defaultGlyph.axes,
         sources=sources,
-        layers=list(layers.values()),
+        layers=layers,
     )
 
 
@@ -231,8 +231,9 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         raise AssertionError("no default source/layer found")
 
     layerGlyphs = {}
-    for layer in glyph.layers:
-        layerName = "foreground" if layer.name == defaultLayerName else layer.name
+    for layerName, layer in glyph.layers.items():
+        if layerName == defaultLayerName:
+            layerName = "foreground"
         assert layerName not in layerGlyphs
         layerGlyphs[layerName] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
         layerGlyphs[layerName].unicodes = unicodes

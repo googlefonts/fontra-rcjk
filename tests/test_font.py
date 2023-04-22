@@ -35,9 +35,8 @@ getGlyphTestData = [
                     "layerName": "bold",
                 },
             ],
-            "layers": [
-                {
-                    "name": "foreground",
+            "layers": {
+                "foreground": {
                     "glyph": {
                         "path": {
                             "coordinates": [
@@ -69,8 +68,7 @@ getGlyphTestData = [
                         "xAdvance": 229,
                     },
                 },
-                {
-                    "name": "bold",
+                "bold": {
                     "glyph": {
                         "path": {
                             "coordinates": [
@@ -102,8 +100,7 @@ getGlyphTestData = [
                         "xAdvance": 450,
                     },
                 },
-                {
-                    "name": "longbar",
+                "longbar": {
                     "glyph": {
                         "path": {
                             "coordinates": [
@@ -135,7 +132,7 @@ getGlyphTestData = [
                         "xAdvance": 369,
                     },
                 },
-            ],
+            },
         },
     ),
     (
@@ -157,9 +154,8 @@ getGlyphTestData = [
                     "layerName": "wght",
                 },
             ],
-            "layers": [
-                {
-                    "name": "foreground",
+            "layers": {
+                "foreground": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],
@@ -184,8 +180,7 @@ getGlyphTestData = [
                         "xAdvance": 350,
                     },
                 },
-                {
-                    "name": "wght",
+                "wght": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],
@@ -210,7 +205,7 @@ getGlyphTestData = [
                         "xAdvance": 350,
                     },
                 },
-            ],
+            },
         },
     ),
     (
@@ -248,9 +243,8 @@ getGlyphTestData = [
                     "layerName": "X_X_la_2_layer",
                 },
             ],
-            "layers": [
-                {
-                    "name": "foreground",
+            "layers": {
+                "foreground": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],
@@ -275,8 +269,7 @@ getGlyphTestData = [
                         "xAdvance": 600,
                     },
                 },
-                {
-                    "name": "X_X_bo_1_layer",
+                "X_X_bo_1_layer": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],
@@ -301,8 +294,7 @@ getGlyphTestData = [
                         "xAdvance": 600,
                     },
                 },
-                {
-                    "name": "X_X_la_2_layer",
+                "X_X_la_2_layer": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],
@@ -327,7 +319,7 @@ getGlyphTestData = [
                         "xAdvance": 600,
                     },
                 },
-            ],
+            },
         },
     ),
 ]
