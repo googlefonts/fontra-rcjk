@@ -290,6 +290,8 @@ def unserializeComponents(variableComponents):
 
 
 def unconvertTransformation(transformation):
+    if transformation.skewX or transformation.skewY:
+        raise TypeError("rcjk does not support skewing of variable components")
     t = transformation
     return dict(
         x=t.translateX,
