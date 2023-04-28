@@ -23,16 +23,19 @@ getGlyphTestData = [
                     "name": "<default>",
                     "location": {},
                     "layerName": "foreground",
+                    "customData": {"fontra.development.status": 0},
                 },
                 {
                     "name": "longbar",
                     "location": {"HLON": 1.0},
                     "layerName": "longbar",
+                    "customData": {"fontra.development.status": 0},
                 },
                 {
                     "name": "bold",
                     "location": {"WGHT": 1.0},
                     "layerName": "bold",
+                    "customData": {"fontra.development.status": 0},
                 },
             ],
             "layers": {
@@ -147,11 +150,13 @@ getGlyphTestData = [
                     "name": "<default>",
                     "location": {},
                     "layerName": "foreground",
+                    "customData": {"fontra.development.status": 0},
                 },
                 {
                     "name": "wght",
                     "location": {"wght": 1.0},
                     "layerName": "wght",
+                    "customData": {"fontra.development.status": 0},
                 },
             ],
             "layers": {
@@ -231,16 +236,19 @@ getGlyphTestData = [
                     "name": "<default>",
                     "location": {},
                     "layerName": "foreground",
+                    "customData": {"fontra.development.status": 0},
                 },
                 {
                     "name": "X_X_bo",
                     "location": {"X_X_bo": 1.0},
                     "layerName": "X_X_bo_1_layer",
+                    "customData": {"fontra.development.status": 0},
                 },
                 {
                     "name": "X_X_la",
                     "location": {"X_X_la": 1.0},
                     "layerName": "X_X_la_2_layer",
+                    "customData": {"fontra.development.status": 0},
                 },
             ],
             "layers": {
