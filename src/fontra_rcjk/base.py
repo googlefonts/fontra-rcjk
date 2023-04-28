@@ -271,7 +271,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         layerGlyph = layerGlyphs[source.layerName]
         varDict = {
             "sourceName": source.name,
-            "on": source.active,
+            "on": not source.inactive,
             "location": source.location,
             "status": devStatus,
         }
