@@ -143,7 +143,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     ]
     variationGlyphData = defaultGlyph.lib.get("robocjk.variationGlyphs", ())
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
-        activeFlag = varDict.get("on", True)
+        inactiveFlag = not varDict.get("on", True)
         layerName = varDict.get("layerName")
         sourceName = varDict.get("sourceName")
         if not sourceName:
@@ -179,7 +179,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
                 name=sourceName,
                 location=location,
                 layerName=layerName,
-                active=activeFlag,
+                inactive=inactiveFlag,
                 customData={FONTRA_STATUS_KEY: varDict.get("status", 0)},
             )
         )
