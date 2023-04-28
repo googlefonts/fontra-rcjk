@@ -16,6 +16,8 @@ from fontra.core.classes import (
 from fontra.core.packedpath import PackedPathPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
+FONTRA_STATUS_KEY = "fontra.development.status"
+
 
 class GLIFGlyph:
     def __init__(self):
@@ -132,12 +134,16 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     dcNames = [c.name for c in defaultComponents]
     defaultComponentLocations = [compo.location for compo in defaultComponents]
 
-    sources = [Source(name="<default>", layerName="foreground")]
+    sources = [
+        Source(
+            name="<default>",
+            layerName="foreground",
+            customData={FONTRA_STATUS_KEY: defaultGlyph.lib.get("robocjk.status", 0)},
+        )
+    ]
     variationGlyphData = defaultGlyph.lib.get("robocjk.variationGlyphs", ())
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
-        if not varDict.get("on", True):
-            # XXX TODO add support for "on flag"
-            continue
+        activeFlag = varDict.get("on", True)
         layerName = varDict.get("layerName")
         sourceName = varDict.get("sourceName")
         if not sourceName:
@@ -168,7 +174,15 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             layerGlyph.components = components
 
         location = varDict["location"]
-        sources.append(Source(name=sourceName, location=location, layerName=layerName))
+        sources.append(
+            Source(
+                name=sourceName,
+                location=location,
+                layerName=layerName,
+                active=activeFlag,
+                customData={FONTRA_STATUS_KEY: varDict.get("status", 0)},
+            )
+        )
 
     return VariableGlyph(
         name=defaultGlyph.name,
@@ -248,12 +262,19 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     variationGlyphs = []
     for source in glyph.sources:
+        devStatus = source.customData.get(FONTRA_STATUS_KEY, 0)
         if source.layerName == defaultLayerName:
+            defaultGlyph.lib["robocjk.status"] = devStatus
             # This is the default glyph, we don't treat it like a layer in .rcjk
             continue
 
         layerGlyph = layerGlyphs[source.layerName]
-        varDict = {"sourceName": source.name, "on": True, "location": source.location}
+        varDict = {
+            "sourceName": source.name,
+            "on": source.active,
+            "location": source.location,
+            "status": devStatus,
+        }
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
 
