@@ -310,8 +310,11 @@ def unserializeComponents(variableComponents):
     return components
 
 
+EPSILON = 1e-9
+
+
 def unconvertTransformation(transformation):
-    if transformation.skewX or transformation.skewY:
+    if abs(transformation.skewX) > EPSILON or abs(transformation.skewY) > EPSILON:
         raise TypeError("rcjk does not support skewing of variable components")
     t = transformation
     return dict(
