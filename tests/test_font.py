@@ -569,13 +569,14 @@ glyphData_a_after_delete_source = [
 
 
 async def test_delete_source_layer(writableTestFont):
+    glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
+    assert glifPathBold.exists()
+
     glyphMap = await writableTestFont.getGlyphMap()
     glyph = await writableTestFont.getGlyph("a")
     del glyph.sources[1]
     del glyph.layers["bold"]
 
-    glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
-    assert glifPathBold.exists()
     await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
 
     glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
