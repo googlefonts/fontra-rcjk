@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
@@ -14,6 +15,7 @@ from fontra.core.classes import (
     VariableGlyph,
 )
 from fontra.core.packedpath import PackedPathPointPen
+from fontTools.ufoLib.filenames import illegalCharacters
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
 FONTRA_STATUS_KEY = "fontra.development.status"
@@ -366,3 +368,22 @@ class TimedCache:
     def cancel(self):
         if self.timerTask is not None:
             self.timerTask.cancel()
+
+
+illegalCharactersMap = {ord(c): ord("_") for c in illegalCharacters}
+hexHashLength = 12
+maxLayerNameLength = 50  # For django-rcjk
+maxLayerNameLengthWithoutHash = maxLayerNameLength - 1 - hexHashLength
+
+
+def makeSafeLayerName(layerName):
+    safeLayerName = layerName.translate(illegalCharactersMap)[:maxLayerNameLength]
+    if safeLayerName != layerName:
+        layerNameHash = hashlib.sha256(layerName.encode("utf-8")).hexdigest()[
+            :hexHashLength
+        ]
+        safeLayerName = (
+            f"{safeLayerName[:maxLayerNameLengthWithoutHash]}.{layerNameHash}"
+        )
+    assert len(safeLayerName) <= maxLayerNameLength
+    return safeLayerName
