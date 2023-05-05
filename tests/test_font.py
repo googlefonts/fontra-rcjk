@@ -699,6 +699,8 @@ layerNameMappingTestData = [
     "      <dict>",
     "        <key>boooo_oooold.75e003ed2da2</key>",
     "        <string>boooo/oooold</string>",
+    "        <key>boooo_ooooldboooo_ooooldboooo_ooooldb.360a3fdd78e6</key>",
+    "        <string>boooo/ooooldboooo/ooooldboooo/ooooldboooo/ooooldboooo/oooold</string>",
     "      </dict>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
@@ -731,6 +733,18 @@ layerNameMappingTestData = [
     "          <key>status</key>",
     "          <integer>0</integer>",
     "        </dict>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>boooo_ooooldboooo_ooooldboooo_ooooldb.360a3fdd78e6</string>",
+    "          <key>location</key>",
+    "          <dict/>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>boooo/ooooldboooo/ooooldboooo/ooooldboooo/ooooldboooo/oooold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
     "      </array>",
     "    </dict>",
     "  </lib>",
@@ -742,16 +756,17 @@ async def test_bad_layer_name(writableTestFont):
     glyphName = "a"
     glyphMap = await writableTestFont.getGlyphMap()
     glyph = await writableTestFont.getGlyph(glyphName)
-    badLayerName = "boooo/oooold"
-    safeLayerName = makeSafeLayerName(badLayerName)
 
-    layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
-    assert not layerPath.exists()
+    for badLayerName in ["boooo/oooold", "boooo/oooold" * 5]:
+        safeLayerName = makeSafeLayerName(badLayerName)
 
-    glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
-    glyph.layers[badLayerName] = Layer(
-        glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
-    )
+        layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
+        assert not layerPath.exists()
+
+        glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
+        glyph.layers[badLayerName] = Layer(
+            glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
+        )
 
     await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
