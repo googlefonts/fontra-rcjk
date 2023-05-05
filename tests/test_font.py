@@ -15,6 +15,8 @@ from fontra.core.classes import (
     from_dict,
 )
 
+from fontra_rcjk.base import makeSafeLayerName
+
 dataDir = pathlib.Path(__file__).resolve().parent / "data"
 
 
@@ -679,14 +681,72 @@ async def test_add_new_layer(writableTestFont):
     assert layerGlifPath.exists()
 
 
+layerNameMappingTestData = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="a" format="2">',
+    '  <advance width="500"/>',
+    '  <unicode hex="0061"/>',
+    "  <outline>",
+    "    <contour>",
+    '      <point x="50" y="0" type="line"/>',
+    '      <point x="250" y="650" type="line"/>',
+    '      <point x="450" y="0" type="line"/>',
+    "    </contour>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>fontra.layerNames</key>",
+    "      <dict>",
+    "        <key>boooo_oooold.75e003ed2da2</key>",
+    "        <string>boooo/oooold</string>",
+    "      </dict>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "      <key>robocjk.variationGlyphs</key>",
+    "      <array>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>bold</string>",
+    "          <key>location</key>",
+    "          <dict>",
+    "            <key>wght</key>",
+    "            <integer>700</integer>",
+    "          </dict>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>bold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>boooo_oooold.75e003ed2da2</string>",
+    "          <key>location</key>",
+    "          <dict/>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>boooo/oooold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "      </array>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
 async def test_bad_layer_name(writableTestFont):
     glyphName = "a"
     glyphMap = await writableTestFont.getGlyphMap()
     glyph = await writableTestFont.getGlyph(glyphName)
     badLayerName = "boooo/oooold"
+    safeLayerName = makeSafeLayerName(badLayerName)
 
-    # layerPath = writableTestFont.path / "characterGlyph" / badLayerName
-    # assert not layerPath.exists()
+    layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
+    assert not layerPath.exists()
 
     glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
     glyph.layers[badLayerName] = Layer(
@@ -695,6 +755,10 @@ async def test_bad_layer_name(writableTestFont):
 
     await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
-    # assert layerPath.exists()
-    # layerGlifPath = layerPath / f"{glyphName}.glif"
-    # assert layerGlifPath.exists()
+    assert layerPath.exists()
+    layerGlifPath = layerPath / f"{glyphName}.glif"
+    assert layerGlifPath.exists()
+
+    mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
+    glifData = mainGlifPath.read_text()
+    assert glifData.splitlines() == layerNameMappingTestData
