@@ -1,10 +1,19 @@
 import contextlib
 import pathlib
+import shutil
 from dataclasses import asdict
 from importlib.metadata import entry_points
 
 import pytest
-from fontra.core.classes import VariableGlyph, from_dict
+from fontra.core.classes import (
+    Layer,
+    LocalAxis,
+    PackedPath,
+    Source,
+    StaticGlyph,
+    VariableGlyph,
+    from_dict,
+)
 
 dataDir = pathlib.Path(__file__).resolve().parent / "data"
 
@@ -338,14 +347,18 @@ testFontPaths = {
 }
 
 
-def getTestFont(backendName):
+def getBackendClassByName(backendName):
     backendEntryPoints = entry_points(group="fontra.filesystem.backends")
-    cls = backendEntryPoints[backendName].load()
+    return backendEntryPoints[backendName].load()
+
+
+def getTestFont(backendName):
+    cls = getBackendClassByName(backendName)
     return cls.fromPath(testFontPaths[backendName])
 
 
 getGlyphNamesTestData = [
-    ("rcjk", 80, ["DC_0030_00", "DC_0031_00", "DC_0032_00", "DC_0033_00"]),
+    ("rcjk", 81, ["DC_0030_00", "DC_0031_00", "DC_0032_00", "DC_0033_00"]),
 ]
 
 
@@ -362,7 +375,7 @@ async def test_getGlyphNames(backendName, numGlyphs, firstFourGlyphNames):
 
 
 getGlyphMapTestData = [
-    ("rcjk", 80, {"uni0031": [ord("1")]}),
+    ("rcjk", 81, {"uni0031": [ord("1")]}),
 ]
 
 
@@ -426,3 +439,220 @@ async def test_getUnitsPerEm(backendName, expectedUnitsPerEm):
     font = getTestFont(backendName)
     unitsPerEm = await font.getUnitsPerEm()
     assert expectedUnitsPerEm == unitsPerEm
+
+
+@pytest.fixture
+def writableTestFont(tmpdir):
+    sourcePath = testFontPaths["rcjk"]
+    destPath = tmpdir / sourcePath.name
+    shutil.copytree(sourcePath, destPath)
+    return getBackendClassByName("rcjk").fromPath(destPath)
+
+
+glyphData_a_before = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="a" format="2">',
+    '  <advance width="500"/>',
+    '  <unicode hex="0061"/>',
+    "  <outline>",
+    "    <contour>",
+    '      <point x="50" y="0" type="line"/>',
+    '      <point x="250" y="650" type="line"/>',
+    '      <point x="450" y="0" type="line"/>',
+    "    </contour>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "      <key>robocjk.variationGlyphs</key>",
+    "      <array>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>bold</string>",
+    "          <key>location</key>",
+    "          <dict>",
+    "            <key>wght</key>",
+    "            <integer>700</integer>",
+    "          </dict>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>bold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "      </array>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+glyphData_a_after = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="a" format="2">',
+    '  <advance width="500"/>',
+    '  <unicode hex="0061"/>',
+    "  <outline>",
+    "    <contour>",
+    '      <point x="80" y="100" type="line"/>',
+    '      <point x="250" y="650" type="line"/>',
+    '      <point x="450" y="0" type="line"/>',
+    "    </contour>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "      <key>robocjk.variationGlyphs</key>",
+    "      <array>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>bold</string>",
+    "          <key>location</key>",
+    "          <dict>",
+    "            <key>wght</key>",
+    "            <integer>700</integer>",
+    "          </dict>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>bold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "      </array>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
+async def test_putGlyph(writableTestFont):
+    glyphMap = await writableTestFont.getGlyphMap()
+    glyph = await writableTestFont.getGlyph("a")
+    assert len(glyph.axes) == 0
+    assert len(glyph.sources) == 2
+    assert len(glyph.layers) == 2
+    glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
+    glifData_before = glifPath.read_text().splitlines()
+    assert glifData_before == glyphData_a_before
+
+    coords = glyph.layers["foreground"].glyph.path.coordinates
+    coords[0] = 80
+    coords[1] = 100
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
+    glifData_after = glifPath.read_text().splitlines()
+    assert glifData_after == glyphData_a_after
+
+
+glyphData_a_after_delete_source = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="a" format="2">',
+    '  <advance width="500"/>',
+    '  <unicode hex="0061"/>',
+    "  <outline>",
+    "    <contour>",
+    '      <point x="50" y="0" type="line"/>',
+    '      <point x="250" y="650" type="line"/>',
+    '      <point x="450" y="0" type="line"/>',
+    "    </contour>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
+async def test_delete_source_layer(writableTestFont):
+    glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
+    assert glifPathBold.exists()
+
+    glyphMap = await writableTestFont.getGlyphMap()
+    glyph = await writableTestFont.getGlyph("a")
+    del glyph.sources[1]
+    del glyph.layers["bold"]
+
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
+
+    glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
+    glifData = glifPath.read_text().splitlines()
+    assert glifData == glyphData_a_after_delete_source
+    assert not glifPathBold.exists()
+
+
+newGlyphTestData = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="b" format="2">',
+    '  <unicode hex="0062"/>',
+    "  <outline>",
+    "    <contour>",
+    '      <point x="0" y="0" type="line"/>',
+    "    </contour>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>robocjk.axes</key>",
+    "      <array>",
+    "        <dict>",
+    "          <key>defaultValue</key>",
+    "          <integer>400</integer>",
+    "          <key>maxValue</key>",
+    "          <integer>700</integer>",
+    "          <key>minValue</key>",
+    "          <integer>100</integer>",
+    "          <key>name</key>",
+    "          <string>wght</string>",
+    "        </dict>",
+    "      </array>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "      <key>robocjk.variationGlyphs</key>",
+    "      <array>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>bold</string>",
+    "          <key>location</key>",
+    "          <dict/>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>bold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "      </array>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
+def makeTestPath():
+    return PackedPath.fromUnpackedContours(
+        [{"points": [{"x": 0, "y": 0}], "isClosed": True}]
+    )
+
+
+async def test_new_glyph(writableTestFont):
+    glyph = VariableGlyph(
+        name="b",
+        axes=[LocalAxis(name="wght", minValue=100, defaultValue=400, maxValue=700)],
+        sources=[
+            Source(name="default", layerName="default"),
+            Source(name="bold", layerName="bold"),
+        ],
+        layers={
+            "default": Layer(glyph=StaticGlyph(path=makeTestPath())),
+            "bold": Layer(glyph=StaticGlyph(path=makeTestPath())),
+        },
+    )
+    await writableTestFont.putGlyph(glyph.name, glyph, [ord("b")])
+
+    glifPath = writableTestFont.path / "characterGlyph" / "b.glif"
+    glifData = glifPath.read_text().splitlines()
+    assert glifData == newGlyphTestData

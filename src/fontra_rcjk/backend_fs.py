@@ -229,15 +229,30 @@ class RCJKGlyphSet:
         assert mainPath.parent == self.path
         mainFileName = mainPath.name
 
+        usedLayerNames = set()
         for layerName, layerGlyph in glyphLayerData:
             if layerName == "foreground":
                 layerPath = mainPath
             else:
                 # FIXME: escape / in layerName, and unescape upon read
                 layerPath = self.path / layerName / mainFileName
+                if layerName not in self.layers:
+                    # new layer
+                    self.layers[layerName] = {}
                 self.layers[layerName][mainFileName] = layerPath
+                usedLayerNames.add(layerName)
             existingData = layerPath.read_bytes() if layerPath.exists() else None
             newData = layerGlyph.asGLIFData().encode("utf-8")
             if newData != existingData:
                 layerPath.write_bytes(newData)
                 self.registerWrittenPath(layerPath)
+
+        # Check to see if we need to delete any layer glif files
+        for layerName, layerContents in self.layers.items():
+            if layerName in usedLayerNames:
+                continue
+            layerPath = layerContents.get(mainFileName)
+            if layerPath is None:
+                continue
+            layerPath.unlink(missing_ok=True)
+            del layerContents[mainFileName]
