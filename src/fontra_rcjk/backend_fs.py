@@ -239,6 +239,8 @@ class RCJKGlyphSet:
                 if layerName not in self.layers:
                     # new layer
                     self.layers[layerName] = {}
+                    layerDirPath = self.path / layerName
+                    layerDirPath.mkdir(exist_ok=True)
                 self.layers[layerName][mainFileName] = layerPath
                 usedLayerNames.add(layerName)
             existingData = layerPath.read_bytes() if layerPath.exists() else None
