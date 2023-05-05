@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
@@ -14,6 +15,7 @@ from fontra.core.classes import (
     VariableGlyph,
 )
 from fontra.core.packedpath import PackedPathPointPen
+from fontTools.ufoLib.filenames import illegalCharacters
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 
 FONTRA_STATUS_KEY = "fontra.development.status"
@@ -131,6 +133,8 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     if defaultComponents:
         layers["foreground"].glyph.components = defaultComponents
 
+    fontraLayerNameMapping = defaultGlyph.lib.get("fontra.layerNames", {})
+
     dcNames = [c.name for c in defaultComponents]
     defaultComponentLocations = [compo.location for compo in defaultComponents]
 
@@ -178,11 +182,17 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             Source(
                 name=sourceName,
                 location=location,
-                layerName=layerName,
+                layerName=fontraLayerNameMapping.get(layerName, layerName),
                 inactive=inactiveFlag,
                 customData={FONTRA_STATUS_KEY: varDict.get("status", 0)},
             )
         )
+
+    if fontraLayerNameMapping:
+        layers = {
+            fontraLayerNameMapping.get(layerName, layerName): layer
+            for layerName, layer in layers.items()
+        }
 
     return VariableGlyph(
         name=defaultGlyph.name,
@@ -234,6 +244,7 @@ def convertTransformation(rcjkTransformation):
 
 
 def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
+    fontraLayerNameMapping = {}
     defaultLayerName = None
     for source in glyph.sources:
         location = {**defaultLocation, **source.location}
@@ -283,7 +294,10 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
             varDict["deepComponents"] = deepComponents
 
         if layerGlyph.hasOutlineOrClassicComponents():
-            varDict["layerName"] = source.layerName
+            safeLayerName = makeSafeLayerName(source.layerName)
+            if safeLayerName != source.layerName:
+                fontraLayerNameMapping[safeLayerName] = source.layerName
+            varDict["layerName"] = safeLayerName
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
             # This is a "virtual" layer: all info will go to defaultGlyph.lib,
@@ -294,6 +308,16 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     if variationGlyphs:
         defaultGlyph.lib["robocjk.variationGlyphs"] = variationGlyphs
+
+    if fontraLayerNameMapping:
+        defaultGlyph.lib["fontra.layerNames"] = fontraLayerNameMapping
+        rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
+        layerGlyphs = {
+            rcjkLayerNameMapping.get(layerName, layerName): layerGlyph
+            for layerName, layerGlyph in layerGlyphs.items()
+        }
+    else:
+        defaultGlyph.lib.pop("fontra.layerNames", None)
 
     return layerGlyphs
 
@@ -366,3 +390,28 @@ class TimedCache:
     def cancel(self):
         if self.timerTask is not None:
             self.timerTask.cancel()
+
+
+illegalCharactersMap = {ord(c): ord("_") for c in illegalCharacters}
+hexHashLength = 12
+maxLayerNameLength = 50  # For django-rcjk
+maxLayerNameLengthWithoutHash = maxLayerNameLength - 1 - hexHashLength
+
+
+def makeSafeLayerName(layerName):
+    """Make a layer name that is safe to use as a file name on the file system,
+    and as a layer name for django-rcjk, which has a 50 character limit, and
+    additionally will also use it as a file system name upon export.
+    """
+    safeLayerName = layerName.translate(illegalCharactersMap)
+    safeLayerName = "".join(c if ord(c) < 0x10000 else "_" for c in safeLayerName)
+    safeLayerName = safeLayerName[:maxLayerNameLength]
+    if safeLayerName != layerName:
+        layerNameHash = hashlib.sha256(layerName.encode("utf-8")).hexdigest()[
+            :hexHashLength
+        ]
+        safeLayerName = (
+            f"{safeLayerName[:maxLayerNameLengthWithoutHash]}.{layerNameHash}"
+        )
+    assert len(safeLayerName) <= maxLayerNameLength
+    return safeLayerName

@@ -3,6 +3,7 @@ import os
 import pathlib
 
 import watchfiles
+from fontra.backends.designspace import cleanupWatchFilesChanges
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
 from fontTools.ufoLib.filenames import userNameToFileName
 
@@ -15,6 +16,9 @@ from .base import (
 )
 
 glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
+
+
+FILE_DELETED_TOKEN = object()
 
 
 class RCJKBackend:
@@ -60,8 +64,9 @@ class RCJKBackend:
     def close(self):
         self._tempGlyphCache.cancel()
 
-    def registerWrittenPath(self, path):
-        self._recentlyWrittenPaths[os.fspath(path)] = os.path.getmtime(path)
+    def registerWrittenPath(self, path, *, deleted=False):
+        mTime = FILE_DELETED_TOKEN if deleted else os.path.getmtime(path)
+        self._recentlyWrittenPaths[os.fspath(path)] = mTime
 
     def _iterGlyphSets(self):
         yield self.characterGlyphGlyphSet, True
@@ -146,9 +151,15 @@ class RCJKBackend:
 
     async def watchExternalChanges(self):
         async for changes in watchfiles.awatch(self.path):
+            changes = cleanupWatchFilesChanges(changes)
             glyphNames = set()
             for change, path in changes:
-                if self._recentlyWrittenPaths.pop(path, None) == os.path.getmtime(path):
+                mTime = (
+                    FILE_DELETED_TOKEN
+                    if not os.path.exists(path)
+                    else os.path.getmtime(path)
+                )
+                if self._recentlyWrittenPaths.pop(path, None) == mTime:
                     # We made this change ourselves, so it is not an external change
                     continue
                 fileName = os.path.basename(path)
@@ -214,7 +225,7 @@ class RCJKGlyphSet:
         glyphLayerData = [("foreground", mainPath.read_bytes())]
         for layerName, layerContents in self.layers.items():
             layerPath = layerContents.get(mainFileName)
-            if layerPath is not None:
+            if layerPath is not None and layerPath.exists():
                 glyphLayerData.append((layerName, layerPath.read_bytes()))
         return glyphLayerData
 
@@ -257,4 +268,5 @@ class RCJKGlyphSet:
             if layerPath is None:
                 continue
             layerPath.unlink(missing_ok=True)
+            self.registerWrittenPath(layerPath, deleted=True)
             del layerContents[mainFileName]
