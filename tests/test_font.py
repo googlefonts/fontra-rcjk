@@ -358,7 +358,7 @@ def getTestFont(backendName):
 
 
 getGlyphNamesTestData = [
-    ("rcjk", 80, ["DC_0030_00", "DC_0031_00", "DC_0032_00", "DC_0033_00"]),
+    ("rcjk", 81, ["DC_0030_00", "DC_0031_00", "DC_0032_00", "DC_0033_00"]),
 ]
 
 
@@ -375,7 +375,7 @@ async def test_getGlyphNames(backendName, numGlyphs, firstFourGlyphNames):
 
 
 getGlyphMapTestData = [
-    ("rcjk", 80, {"uni0031": [ord("1")]}),
+    ("rcjk", 81, {"uni0031": [ord("1")]}),
 ]
 
 
@@ -546,6 +546,44 @@ async def test_putGlyph(writableTestFont):
     assert glifData_after == glyphData_a_after
 
 
+glyphData_a_after_delete_source = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="a" format="2">',
+    '  <advance width="500"/>',
+    '  <unicode hex="0061"/>',
+    "  <outline>",
+    "    <contour>",
+    '      <point x="50" y="0" type="line"/>',
+    '      <point x="250" y="650" type="line"/>',
+    '      <point x="450" y="0" type="line"/>',
+    "    </contour>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
+async def test_delete_source_layer(writableTestFont):
+    glyphMap = await writableTestFont.getGlyphMap()
+    glyph = await writableTestFont.getGlyph("a")
+    del glyph.sources[1]
+    del glyph.layers["bold"]
+
+    glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
+    assert glifPathBold.exists()
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
+
+    glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
+    glifData = glifPath.read_text().splitlines()
+    assert glifData == glyphData_a_after_delete_source
+    # assert not glifPathBold.exists()
+
+
 newGlyphTestData = [
     "<?xml version='1.0' encoding='UTF-8'?>",
     '<glyph name="b" format="2">',
@@ -593,7 +631,7 @@ newGlyphTestData = [
 ]
 
 
-def testPath():
+def makeTestPath():
     return PackedPath.fromUnpackedContours(
         [{"points": [{"x": 0, "y": 0}], "isClosed": True}]
     )
@@ -608,8 +646,8 @@ async def test_new_glyph(writableTestFont):
             Source(name="bold", layerName="bold"),
         ],
         layers={
-            "default": Layer(glyph=StaticGlyph(path=testPath())),
-            "bold": Layer(glyph=StaticGlyph(path=testPath())),
+            "default": Layer(glyph=StaticGlyph(path=makeTestPath())),
+            "bold": Layer(glyph=StaticGlyph(path=makeTestPath())),
         },
     )
     await writableTestFont.putGlyph(glyph.name, glyph, [ord("b")])
