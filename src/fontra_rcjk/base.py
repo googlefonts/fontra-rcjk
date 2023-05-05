@@ -377,6 +377,10 @@ maxLayerNameLengthWithoutHash = maxLayerNameLength - 1 - hexHashLength
 
 
 def makeSafeLayerName(layerName):
+    """Make a layer name that is safe to use as a file name on the file system,
+    and as a layer name for django-rcjk, which has a 50 character limit, and
+    additionally will also use it as a file system name upon export.
+    """
     safeLayerName = layerName.translate(illegalCharactersMap)[:maxLayerNameLength]
     if safeLayerName != layerName:
         layerNameHash = hashlib.sha256(layerName.encode("utf-8")).hexdigest()[
