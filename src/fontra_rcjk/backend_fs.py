@@ -235,6 +235,9 @@ class RCJKGlyphSet:
             else:
                 # FIXME: escape / in layerName, and unescape upon read
                 layerPath = self.path / layerName / mainFileName
+                if layerName not in self.layers:
+                    # new layer
+                    self.layers[layerName] = {}
                 self.layers[layerName][mainFileName] = layerPath
             existingData = layerPath.read_bytes() if layerPath.exists() else None
             newData = layerGlyph.asGLIFData().encode("utf-8")
