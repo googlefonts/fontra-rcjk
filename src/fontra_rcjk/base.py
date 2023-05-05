@@ -188,6 +188,12 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             )
         )
 
+    if fontraLayerNameMapping:
+        layers = {
+            fontraLayerNameMapping.get(layerName, layerName): layer
+            for layerName, layer in layers.items()
+        }
+
     return VariableGlyph(
         name=defaultGlyph.name,
         axes=defaultGlyph.axes,
