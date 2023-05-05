@@ -581,7 +581,7 @@ async def test_delete_source_layer(writableTestFont):
     glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
     glifData = glifPath.read_text().splitlines()
     assert glifData == glyphData_a_after_delete_source
-    # assert not glifPathBold.exists()
+    assert not glifPathBold.exists()
 
 
 newGlyphTestData = [
