@@ -677,3 +677,24 @@ async def test_add_new_layer(writableTestFont):
     assert layerPath.exists()
     layerGlifPath = layerPath / f"{glyphName}.glif"
     assert layerGlifPath.exists()
+
+
+async def test_bad_layer_name(writableTestFont):
+    glyphName = "a"
+    glyphMap = await writableTestFont.getGlyphMap()
+    glyph = await writableTestFont.getGlyph(glyphName)
+    badLayerName = "boooo/oooold"
+
+    # layerPath = writableTestFont.path / "characterGlyph" / badLayerName
+    # assert not layerPath.exists()
+
+    glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
+    glyph.layers[badLayerName] = Layer(
+        glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
+    )
+
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+
+    # assert layerPath.exists()
+    # layerGlifPath = layerPath / f"{glyphName}.glif"
+    # assert layerGlifPath.exists()
