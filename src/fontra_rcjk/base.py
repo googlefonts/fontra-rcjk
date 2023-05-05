@@ -133,6 +133,8 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     if defaultComponents:
         layers["foreground"].glyph.components = defaultComponents
 
+    fontraLayerNameMapping = defaultGlyph.lib.get("fontra.layerNames", {})
+
     dcNames = [c.name for c in defaultComponents]
     defaultComponentLocations = [compo.location for compo in defaultComponents]
 
@@ -180,7 +182,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             Source(
                 name=sourceName,
                 location=location,
-                layerName=layerName,
+                layerName=fontraLayerNameMapping.get(layerName, layerName),
                 inactive=inactiveFlag,
                 customData={FONTRA_STATUS_KEY: varDict.get("status", 0)},
             )
@@ -236,6 +238,7 @@ def convertTransformation(rcjkTransformation):
 
 
 def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
+    fontraLayerNameMapping = {}
     defaultLayerName = None
     for source in glyph.sources:
         location = {**defaultLocation, **source.location}
@@ -285,7 +288,10 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
             varDict["deepComponents"] = deepComponents
 
         if layerGlyph.hasOutlineOrClassicComponents():
-            varDict["layerName"] = source.layerName
+            safeLayerName = makeSafeLayerName(source.layerName)
+            if safeLayerName != source.layerName:
+                fontraLayerNameMapping[safeLayerName] = source.layerName
+            varDict["layerName"] = safeLayerName
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
             # This is a "virtual" layer: all info will go to defaultGlyph.lib,
@@ -296,6 +302,16 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     if variationGlyphs:
         defaultGlyph.lib["robocjk.variationGlyphs"] = variationGlyphs
+
+    if fontraLayerNameMapping:
+        defaultGlyph.lib["fontra.layerNames"] = fontraLayerNameMapping
+        rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
+        layerGlyphs = {
+            rcjkLayerNameMapping.get(layerName, layerName): layerGlyph
+            for layerName, layerGlyph in layerGlyphs.items()
+        }
+    else:
+        defaultGlyph.lib.pop("fontra.layerNames", None)
 
     return layerGlyphs
 
