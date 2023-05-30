@@ -404,7 +404,6 @@ def makeSafeLayerName(layerName):
     additionally will also use it as a file system name upon export.
     """
     safeLayerName = layerName.translate(illegalCharactersMap)
-    safeLayerName = "".join(c if ord(c) < 0x10000 else "_" for c in safeLayerName)
     safeLayerName = safeLayerName[:maxLayerNameLength]
     if safeLayerName != layerName:
         layerNameHash = hashlib.sha256(layerName.encode("utf-8")).hexdigest()[
