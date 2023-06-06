@@ -209,7 +209,7 @@ def serializeComponents(
         neutralComponentLocations = [{}] * len(deepComponents)
     elif len(neutralComponentLocations) < len(deepComponents):
         neutralComponentLocations = neutralComponentLocations + [{}] * (
-            len(neutralComponentLocations) - len(deepComponents)
+            len(deepComponents) - len(neutralComponentLocations)
         )
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
