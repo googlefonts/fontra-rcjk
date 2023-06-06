@@ -207,6 +207,10 @@ def serializeComponents(
 ):
     if neutralComponentLocations is None:
         neutralComponentLocations = [{}] * len(deepComponents)
+    elif len(neutralComponentLocations) < len(deepComponents):
+        neutralComponentLocations = neutralComponentLocations + [{}] * (
+            len(neutralComponentLocations) - len(deepComponents)
+        )
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
         name = deepCompoDict["name"] if "name" in deepCompoDict else dcNames[index]
