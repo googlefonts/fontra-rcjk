@@ -12,6 +12,7 @@ from .base import (
     TimedCache,
     getComponentAxisDefaults,
     serializeGlyph,
+    standardFontLibItems,
     unserializeGlyph,
 )
 
@@ -144,10 +145,11 @@ class RCJKBackend:
         self._glyphMap[glyphName] = unicodes
 
     async def getFontLib(self):
+        fontLib = {}
         libPath = self.path / "fontLib.json"
         if libPath.is_file():
-            return json.loads(libPath.read_text(encoding="utf-8"))
-        return {}
+            fontLib = json.loads(libPath.read_text(encoding="utf-8"))
+        return fontLib | standardFontLibItems
 
     async def watchExternalChanges(self):
         async for changes in watchfiles.awatch(self.path):
