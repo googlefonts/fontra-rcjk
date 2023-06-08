@@ -11,6 +11,7 @@ from .base import (
     TimedCache,
     getComponentAxisDefaults,
     serializeGlyph,
+    standardFontLibItems,
     unserializeGlyph,
 )
 from .client import HTTPError
@@ -76,8 +77,8 @@ class RCJKMySQLBackend:
                 self._tempFontItemsCache["designspace"] = font_data["data"].get(
                     "designspace", {}
                 )
-                self._tempFontItemsCache["fontLib"] = font_data["data"].get(
-                    "fontlib", {}
+                self._tempFontItemsCache["fontLib"] = (
+                    font_data["data"].get("fontlib", {}) | standardFontLibItems
                 )
                 self._tempFontItemsCache.updateTimeOut()
                 del self._getMiscFontItemsTask
