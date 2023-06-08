@@ -428,7 +428,7 @@ async def test_getGlobalAxes(backendName, expectedGlobalAxes):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("backendName, expectedLibLen", [("rcjk", 4)])
+@pytest.mark.parametrize("backendName, expectedLibLen", [("rcjk", 5)])
 async def test_getFontLib(backendName, expectedLibLen):
     font = getTestFont(backendName)
     lib = await font.getFontLib()
