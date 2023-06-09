@@ -50,6 +50,8 @@ class GLIFGlyph:
         self.name = glyphName
         self.width = staticGlyph.xAdvance
         self.path = staticGlyph.path
+        self.components = []
+        self.variableComponents = []
         for component in staticGlyph.components:
             if component.location:
                 self.variableComponents.append(component)
