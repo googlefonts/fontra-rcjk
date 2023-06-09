@@ -137,8 +137,12 @@ class RCJKBackend:
         return None
 
     async def putGlyph(self, glyphName, glyph, unicodes):
+        if glyphName not in self._glyphMap:
+            existingLayerGlyphs = {}
+        else:
+            existingLayerGlyphs = self._getLayerGlyphs(glyphName)
         layerGlyphs = unserializeGlyph(
-            glyphName, glyph, unicodes, self._defaultLocation
+            glyphName, glyph, unicodes, self._defaultLocation, existingLayerGlyphs
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
