@@ -456,6 +456,10 @@ glyphData_a_before = [
     '<glyph name="a" format="2">',
     '  <advance width="500"/>',
     '  <unicode hex="0061"/>',
+    "  <note>",
+    "some note",
+    "</note>",
+    '  <guideline x="360" y="612" angle="0"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="50" y="0" type="line"/>',
@@ -485,6 +489,8 @@ glyphData_a_before = [
     "          <integer>0</integer>",
     "        </dict>",
     "      </array>",
+    "      <key>xyz.fontra.something.nothing</key>",
+    "      <string>test</string>",
     "    </dict>",
     "  </lib>",
     "</glyph>",
@@ -495,6 +501,10 @@ glyphData_a_after = [
     '<glyph name="a" format="2">',
     '  <advance width="500"/>',
     '  <unicode hex="0061"/>',
+    "  <note>",
+    "some note",
+    "</note>",
+    '  <guideline x="360" y="612" angle="0"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="80" y="100" type="line"/>',
@@ -524,6 +534,8 @@ glyphData_a_after = [
     "          <integer>0</integer>",
     "        </dict>",
     "      </array>",
+    "      <key>xyz.fontra.something.nothing</key>",
+    "      <string>test</string>",
     "    </dict>",
     "  </lib>",
     "</glyph>",
@@ -553,6 +565,10 @@ glyphData_a_after_delete_source = [
     '<glyph name="a" format="2">',
     '  <advance width="500"/>',
     '  <unicode hex="0061"/>',
+    "  <note>",
+    "some note",
+    "</note>",
+    '  <guideline x="360" y="612" angle="0"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="50" y="0" type="line"/>',
@@ -564,6 +580,8 @@ glyphData_a_after_delete_source = [
     "    <dict>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
+    "      <key>xyz.fontra.something.nothing</key>",
+    "      <string>test</string>",
     "    </dict>",
     "  </lib>",
     "</glyph>",
@@ -681,11 +699,29 @@ async def test_add_new_layer(writableTestFont):
     assert layerGlifPath.exists()
 
 
+async def test_write_retains_unknown_data(writableTestFont):
+    glyphName = "a"
+    glyphMap = await writableTestFont.getGlyphMap()
+    glyph = await writableTestFont.getGlyph(glyphName)
+
+    layerGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
+
+    existingLayerData = layerGlifPath.read_text()
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+    newLayerData = layerGlifPath.read_text()
+
+    assert existingLayerData == newLayerData
+
+
 layerNameMappingTestData = [
     "<?xml version='1.0' encoding='UTF-8'?>",
     '<glyph name="a" format="2">',
     '  <advance width="500"/>',
     '  <unicode hex="0061"/>',
+    "  <note>",
+    "some note",
+    "</note>",
+    '  <guideline x="360" y="612" angle="0"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="50" y="0" type="line"/>',
@@ -746,6 +782,8 @@ layerNameMappingTestData = [
     "          <integer>0</integer>",
     "        </dict>",
     "      </array>",
+    "      <key>xyz.fontra.something.nothing</key>",
+    "      <string>test</string>",
     "    </dict>",
     "  </lib>",
     "</glyph>",
