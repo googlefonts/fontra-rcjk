@@ -2,6 +2,10 @@
 <glyph name="a" format="2">
   <advance width="500"/>
   <unicode hex="0061"/>
+  <note>
+some note
+</note>
+  <guideline x="360" y="612" angle="0"/>
   <outline>
     <contour>
       <point x="50" y="0" type="line"/>
@@ -31,6 +35,8 @@
           <integer>0</integer>
         </dict>
       </array>
+      <key>xyz.fontra.something.nothing</key>
+      <string>test</string>
     </dict>
   </lib>
 </glyph>

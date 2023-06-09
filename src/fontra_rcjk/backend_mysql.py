@@ -164,16 +164,18 @@ class RCJKMySQLBackend:
 
     async def _putGlyph(self, glyphName, glyph, unicodes):
         defaultLocation = await self.getDefaultLocation()
-        layerGlyphs = unserializeGlyph(glyphName, glyph, unicodes, defaultLocation)
 
         if glyphName not in self._rcjkGlyphInfo:
             await self._newGlyph(glyphName, unicodes)
-            existingLayerData = {}
+            existingLayerGlyphs = {}
         else:
-            existingLayerData = {
-                k: v.cachedGLIFData
-                for k, v in (await self._getLayerGlyphs(glyphName)).items()
-            }
+            existingLayerGlyphs = await self._getLayerGlyphs(glyphName)
+
+        existingLayerData = {k: v.asGLIFData() for k, v in existingLayerGlyphs.items()}
+
+        layerGlyphs = unserializeGlyph(
+            glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
+        )
 
         self._glyphMap[glyphName] = unicodes
 
