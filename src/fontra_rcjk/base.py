@@ -43,6 +43,10 @@ class GLIFGlyph:
     @classmethod
     def fromStaticGlyph(cls, glyphName, staticGlyph):
         self = cls()
+        self.updateFromStaticGlyph(glyphName, staticGlyph)
+        return self
+
+    def updateFromStaticGlyph(self, glyphName, staticGlyph):
         self.name = glyphName
         self.width = staticGlyph.xAdvance
         self.path = staticGlyph.path
@@ -52,14 +56,9 @@ class GLIFGlyph:
             else:
                 # classic component
                 self.components.append(component)
-        return self
 
     def asGLIFData(self):
         return writeGlyphToString(self.name, self, self.drawPoints, validate=False)
-
-    @cached_property
-    def cachedGLIFData(self):
-        return self.asGLIFData()
 
     def hasOutlineOrClassicComponents(self):
         return (
@@ -94,6 +93,9 @@ class GLIFGlyph:
             path=deepcopy(self.path),
             components=deepcopy(self.components),
         )
+
+    def copy(self):
+        return deepcopy(self)
 
 
 def cleanupAxis(axisDict):
@@ -247,7 +249,7 @@ def convertTransformation(rcjkTransformation):
     )
 
 
-def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
+def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs):
     fontraLayerNameMapping = {}
     defaultLayerName = None
     for source in glyph.sources:
@@ -264,7 +266,13 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
         if layerName == defaultLayerName:
             layerName = "foreground"
         assert layerName not in layerGlyphs
-        layerGlyphs[layerName] = GLIFGlyph.fromStaticGlyph(glyphName, layer.glyph)
+        layerGlyph = existingLayerGlyphs.get(layerName)
+        if layerGlyph is None:
+            layerGlyph = GLIFGlyph()
+        else:
+            layerGlyph = layerGlyph.copy()
+        layerGlyph.updateFromStaticGlyph(glyphName, layer.glyph)
+        layerGlyphs[layerName] = layerGlyph
         layerGlyphs[layerName].unicodes = unicodes
     defaultGlyph = layerGlyphs["foreground"]
 
@@ -312,6 +320,8 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation):
 
     if variationGlyphs:
         defaultGlyph.lib["robocjk.variationGlyphs"] = variationGlyphs
+    else:
+        defaultGlyph.lib.pop("robocjk.variationGlyphs", None)
 
     if fontraLayerNameMapping:
         defaultGlyph.lib["fontra.layerNames"] = fontraLayerNameMapping
