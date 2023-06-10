@@ -147,6 +147,7 @@ class RCJKBackend:
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
         self._glyphMap[glyphName] = unicodes
+        self._tempGlyphCache[glyphName] = layerGlyphs
 
     async def getFontLib(self):
         fontLib = {}
