@@ -699,14 +699,17 @@ async def test_add_new_layer(writableTestFont):
     assert layerGlifPath.exists()
 
 
-async def test_write_retains_unknown_data(writableTestFont):
-    glyphName = "a"
+@pytest.mark.parametrize("glyphName", ["a", "uni0030"])
+async def test_write_roundtrip(writableTestFont, glyphName):
     glyphMap = await writableTestFont.getGlyphMap()
     glyph = await writableTestFont.getGlyph(glyphName)
 
     layerGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
 
     existingLayerData = layerGlifPath.read_text()
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+    # Write the glyph again to ensure a write bug that would duplicate the
+    # components doesn't resurface
     await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
     newLayerData = layerGlifPath.read_text()
 
