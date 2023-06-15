@@ -134,7 +134,8 @@ class RCJKMySQLBackend:
             response = await method(
                 self.fontUID, glyphID, return_layers=True, return_related=True
             )
-            self._lastPolledForChanges = response["server_datetime"]
+            if self._lastPolledForChanges is None:
+                self._lastPolledForChanges = response["server_datetime"]
 
             glyphData = response["data"]
             self._populateGlyphCache(glyphName, glyphData)
