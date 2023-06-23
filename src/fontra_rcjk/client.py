@@ -45,11 +45,11 @@ class Client:
         if not host or not any(
             [host.startswith(protocol) for protocol in ["http://", "https://"]]
         ):
-            raise ValueError("Invalid host: {}".format(host))
+            raise ValueError(f"Invalid host: {host}")
         if not username:
-            raise ValueError("Invalid username: {}".format(username))
+            raise ValueError(f"Invalid username: {username}")
         if not password:
-            raise ValueError("Invalid password: {}".format(password))
+            raise ValueError(f"Invalid password: {password}")
 
         # strip last slash in case
         if host.endswith("/"):
@@ -127,7 +127,7 @@ class Client:
         # build request headers
         headers = {}
         if self._auth_token:
-            headers["Authorization"] = "Bearer {}".format(self._auth_token)
+            headers["Authorization"] = f"Bearer {self._auth_token}"
         headers["Cache-Control"] = "no-cache"
         headers["Pragma"] = "no-cache"
         return url, data, headers
@@ -198,8 +198,8 @@ class Client:
         }
         url = view_names.get(view_name)
         if not url:
-            raise Exception('Invalid url view_name: "{}".'.format(view_name))
-        abs_url = "{}{}".format(self._host, url)
+            raise Exception(f'Invalid url view_name: "{view_name}".')
+        abs_url = f"{self._host}{url}"
         return abs_url
 
     def auth_token(self):
