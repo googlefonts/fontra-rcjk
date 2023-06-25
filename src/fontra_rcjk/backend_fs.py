@@ -13,6 +13,7 @@ from .base import (
     getComponentAxisDefaults,
     serializeGlyph,
     standardFontLibItems,
+    unpackAxes,
     unserializeGlyph,
 )
 
@@ -89,13 +90,7 @@ class RCJKBackend:
     async def getGlobalAxes(self):
         axes = getattr(self, "_globalAxes", None)
         if axes is None:
-            axes = []
-            for axis in self.designspace.get("axes", ()):
-                axis = dict(axis)
-                axis["label"] = axis["name"]
-                axis["name"] = axis["tag"]
-                del axis["tag"]
-                axes.append(axis)
+            axes = unpackAxes(self.designspace.get("axes", ()))
             self._globalAxes = axes
         return axes
 

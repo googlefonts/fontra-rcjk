@@ -7,6 +7,7 @@ from functools import cached_property
 from fontra.backends.designspace import cleanAffine, makeAffineTransform
 from fontra.core.classes import (
     Component,
+    GlobalAxis,
     Layer,
     LocalAxis,
     Source,
@@ -462,3 +463,17 @@ standardFontLibItems = {
         },
     ]
 }
+
+
+def unpackAxes(dsAxes):
+    return [
+        GlobalAxis(
+            label=axis["name"],
+            name=axis["tag"],
+            tag=axis["tag"],
+            minValue=axis["minValue"],
+            defaultValue=axis["defaultValue"],
+            maxValue=axis["maxValue"],
+        )
+        for axis in dsAxes
+    ]
