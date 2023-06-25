@@ -6,6 +6,7 @@ from importlib.metadata import entry_points
 
 import pytest
 from fontra.core.classes import (
+    GlobalAxis,
     Layer,
     LocalAxis,
     PackedPath,
@@ -407,13 +408,14 @@ getGlobalAxesTestData = [
     (
         "rcjk",
         [
-            {
-                "defaultValue": 400,
-                "maxValue": 700,
-                "minValue": 400,
-                "label": "Weight",
-                "name": "wght",
-            },
+            GlobalAxis(
+                label="Weight",
+                name="wght",
+                tag="wght",
+                minValue=400,
+                defaultValue=400,
+                maxValue=700,
+            ),
         ],
     ),
 ]

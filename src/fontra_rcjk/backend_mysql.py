@@ -12,6 +12,7 @@ from .base import (
     getComponentAxisDefaults,
     serializeGlyph,
     standardFontLibItems,
+    unpackAxes,
     unserializeGlyph,
 )
 from .client import HTTPError
@@ -89,17 +90,11 @@ class RCJKMySQLBackend:
     async def getGlobalAxes(self):
         axes = self._tempFontItemsCache.get("axes")
         if axes is None:
-            defaultLocation = {}
             await self._getMiscFontItems()
             designspace = self._tempFontItemsCache["designspace"]
-            axes = [dict(axis) for axis in designspace.get("axes", ())]
-            for axis in axes:
-                axis["label"] = axis["name"]
-                axis["name"] = axis["tag"]
-                del axis["tag"]
-                defaultLocation[axis["name"]] = axis["defaultValue"]
+            axes = unpackAxes(designspace.get("axes", ()))
             self._tempFontItemsCache["axes"] = axes
-            self._defaultLocation = defaultLocation
+            self._defaultLocation = {axis.name: axis.defaultValue for axis in axes}
         return axes
 
     async def getDefaultLocation(self):
