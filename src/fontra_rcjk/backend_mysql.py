@@ -127,7 +127,11 @@ class RCJKMySQLBackend:
             getMethodName = _getFullMethodName(typeCode, "get")
             method = getattr(self.client, getMethodName)
             response = await method(
-                self.fontUID, glyphID, return_layers=True, return_related=True
+                self.fontUID,
+                glyphID,
+                return_layers=True,
+                return_made_of=True,
+                return_used_by=False,
             )
             if self._lastPolledForChanges is None:
                 self._lastPolledForChanges = response["server_datetime"]
