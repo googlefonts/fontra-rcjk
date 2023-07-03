@@ -281,10 +281,14 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerG
 
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
+    else:
+        defaultGlyph.lib.pop("robocjk.axes", None)
 
     deepComponents = unserializeComponents(defaultGlyph.variableComponents)
     if deepComponents:
         defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
+    else:
+        defaultGlyph.lib.pop("robocjk.deepComponents", None)
 
     variationGlyphs = []
     for source in glyph.sources:
