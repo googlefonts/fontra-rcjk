@@ -820,3 +820,46 @@ async def test_bad_layer_name(writableTestFont):
     mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
     glifData = mainGlifPath.read_text()
     assert glifData.splitlines() == layerNameMappingTestData
+
+
+deleteItemsTestData = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="uni0030" format="2">',
+    '  <advance width="600"/>',
+    '  <unicode hex="0030"/>',
+    '  <guideline x="360" y="612" angle="0" identifier="gRMeb2PVEQ"/>',
+    '  <guideline x="307" y="600" angle="0" identifier="386e1cIMnm"/>',
+    '  <guideline x="305" y="-12" angle="0" identifier="xMdDy12pWP"/>',
+    "  <outline>",
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>public.markColor</key>",
+    "      <string>1,0,0,1</string>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "      <key>xyz.fontra.test</key>",
+    "      <string>test</string>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
+async def test_delete_items(writableTestFont):
+    glyphName = "uni0030"
+    glyphMap = await writableTestFont.getGlyphMap()
+    glyph = await writableTestFont.getGlyph(glyphName)
+
+    glyph.axes = []
+    glyph.sources = [glyph.sources[0]]
+    layerName = glyph.sources[0].layerName
+    layer = glyph.layers[layerName]
+    layer.glyph.components = []
+    glyph.layers = {layerName: layer}
+
+    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+
+    mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
+    glifData = mainGlifPath.read_text()
+    assert glifData.splitlines() == deleteItemsTestData
