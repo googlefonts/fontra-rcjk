@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
 
-from fontra.backends.designspace import cleanAffine, makeAffineTransform
+from fontra.backends.designspace import cleanupTransform
 from fontra.core.classes import (
     Component,
     GlobalAxis,
@@ -12,12 +12,12 @@ from fontra.core.classes import (
     LocalAxis,
     Source,
     StaticGlyph,
-    Transformation,
     VariableGlyph,
 )
 from fontra.core.packedpath import PackedPathPointPen
 from fontTools.ufoLib.filenames import illegalCharacters
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
+from fontTools.misc.transform import DecomposedTransform
 
 FONTRA_STATUS_KEY = "fontra.development.status"
 
@@ -76,7 +76,7 @@ class GLIFGlyph:
         for component in self.components:
             pen.addComponent(
                 component.name,
-                cleanAffine(makeAffineTransform(component.transformation)),
+                cleanupTransform(component.transformation.toTransform()),
             )
 
     @cached_property
@@ -241,7 +241,7 @@ def cleanupLocation(location, axisDefaults, neutralLocation):
 
 def convertTransformation(rcjkTransformation):
     t = rcjkTransformation
-    return Transformation(
+    return DecomposedTransform(
         translateX=t["x"],
         translateY=t["y"],
         rotation=t["rotation"],
