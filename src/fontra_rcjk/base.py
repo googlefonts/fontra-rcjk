@@ -18,7 +18,6 @@ from fontra.core.packedpath import PackedPathPointPen
 from fontTools.ufoLib.filenames import illegalCharacters
 from fontTools.misc.transform import DecomposedTransform
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
-from fontTools.misc.transform import DecomposedTransform
 
 FONTRA_STATUS_KEY = "fontra.development.status"
 
