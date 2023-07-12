@@ -545,21 +545,22 @@ glyphData_a_after = [
 
 
 async def test_putGlyph(writableTestFont):
-    glyphMap = await writableTestFont.getGlyphMap()
-    glyph = await writableTestFont.getGlyph("a")
-    assert len(glyph.axes) == 0
-    assert len(glyph.sources) == 2
-    assert len(glyph.layers) == 2
-    glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
-    glifData_before = glifPath.read_text().splitlines()
-    assert glifData_before == glyphData_a_before
+    with contextlib.closing(writableTestFont):
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph("a")
+        assert len(glyph.axes) == 0
+        assert len(glyph.sources) == 2
+        assert len(glyph.layers) == 2
+        glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
+        glifData_before = glifPath.read_text().splitlines()
+        assert glifData_before == glyphData_a_before
 
-    coords = glyph.layers["foreground"].glyph.path.coordinates
-    coords[0] = 80
-    coords[1] = 100
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
-    glifData_after = glifPath.read_text().splitlines()
-    assert glifData_after == glyphData_a_after
+        coords = glyph.layers["foreground"].glyph.path.coordinates
+        coords[0] = 80
+        coords[1] = 100
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
+        glifData_after = glifPath.read_text().splitlines()
+        assert glifData_after == glyphData_a_after
 
 
 glyphData_a_after_delete_source = [
@@ -591,20 +592,21 @@ glyphData_a_after_delete_source = [
 
 
 async def test_delete_source_layer(writableTestFont):
-    glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
-    assert glifPathBold.exists()
+    with contextlib.closing(writableTestFont):
+        glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
+        assert glifPathBold.exists()
 
-    glyphMap = await writableTestFont.getGlyphMap()
-    glyph = await writableTestFont.getGlyph("a")
-    del glyph.sources[1]
-    del glyph.layers["bold"]
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph("a")
+        del glyph.sources[1]
+        del glyph.layers["bold"]
 
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap["a"])
 
-    glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
-    glifData = glifPath.read_text().splitlines()
-    assert glifData == glyphData_a_after_delete_source
-    assert not glifPathBold.exists()
+        glifPath = writableTestFont.path / "characterGlyph" / "a.glif"
+        glifData = glifPath.read_text().splitlines()
+        assert glifData == glyphData_a_after_delete_source
+        assert not glifPathBold.exists()
 
 
 newGlyphTestData = [
@@ -661,61 +663,64 @@ def makeTestPath():
 
 
 async def test_new_glyph(writableTestFont):
-    glyph = VariableGlyph(
-        name="b",
-        axes=[LocalAxis(name="wght", minValue=100, defaultValue=400, maxValue=700)],
-        sources=[
-            Source(name="default", layerName="default"),
-            Source(name="bold", layerName="bold"),
-        ],
-        layers={
-            "default": Layer(glyph=StaticGlyph(path=makeTestPath())),
-            "bold": Layer(glyph=StaticGlyph(path=makeTestPath())),
-        },
-    )
-    await writableTestFont.putGlyph(glyph.name, glyph, [ord("b")])
+    with contextlib.closing(writableTestFont):
+        glyph = VariableGlyph(
+            name="b",
+            axes=[LocalAxis(name="wght", minValue=100, defaultValue=400, maxValue=700)],
+            sources=[
+                Source(name="default", layerName="default"),
+                Source(name="bold", layerName="bold"),
+            ],
+            layers={
+                "default": Layer(glyph=StaticGlyph(path=makeTestPath())),
+                "bold": Layer(glyph=StaticGlyph(path=makeTestPath())),
+            },
+        )
+        await writableTestFont.putGlyph(glyph.name, glyph, [ord("b")])
 
-    glifPath = writableTestFont.path / "characterGlyph" / "b.glif"
-    glifData = glifPath.read_text().splitlines()
-    assert glifData == newGlyphTestData
+        glifPath = writableTestFont.path / "characterGlyph" / "b.glif"
+        glifData = glifPath.read_text().splitlines()
+        assert glifData == newGlyphTestData
 
 
 async def test_add_new_layer(writableTestFont):
-    glyphName = "a"
-    glyphMap = await writableTestFont.getGlyphMap()
-    glyph = await writableTestFont.getGlyph(glyphName)
-    newLayerName = "new_layer_name"
+    with contextlib.closing(writableTestFont):
+        glyphName = "a"
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph(glyphName)
+        newLayerName = "new_layer_name"
 
-    layerPath = writableTestFont.path / "characterGlyph" / newLayerName
-    assert not layerPath.exists()
+        layerPath = writableTestFont.path / "characterGlyph" / newLayerName
+        assert not layerPath.exists()
 
-    glyph.sources.append(Source(name=newLayerName, layerName=newLayerName))
-    glyph.layers[newLayerName] = Layer(
-        glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
-    )
+        glyph.sources.append(Source(name=newLayerName, layerName=newLayerName))
+        glyph.layers[newLayerName] = Layer(
+            glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
+        )
 
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
-    assert layerPath.exists()
-    layerGlifPath = layerPath / f"{glyphName}.glif"
-    assert layerGlifPath.exists()
+        assert layerPath.exists()
+        layerGlifPath = layerPath / f"{glyphName}.glif"
+        assert layerGlifPath.exists()
 
 
 @pytest.mark.parametrize("glyphName", ["a", "uni0030"])
 async def test_write_roundtrip(writableTestFont, glyphName):
-    glyphMap = await writableTestFont.getGlyphMap()
-    glyph = await writableTestFont.getGlyph(glyphName)
+    with contextlib.closing(writableTestFont):
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph(glyphName)
 
-    layerGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
+        layerGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
 
-    existingLayerData = layerGlifPath.read_text()
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
-    # Write the glyph again to ensure a write bug that would duplicate the
-    # components doesn't resurface
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
-    newLayerData = layerGlifPath.read_text()
+        existingLayerData = layerGlifPath.read_text()
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+        # Write the glyph again to ensure a write bug that would duplicate the
+        # components doesn't resurface
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+        newLayerData = layerGlifPath.read_text()
 
-    assert existingLayerData == newLayerData
+        assert existingLayerData == newLayerData
 
 
 layerNameMappingTestData = [
@@ -796,30 +801,31 @@ layerNameMappingTestData = [
 
 
 async def test_bad_layer_name(writableTestFont):
-    glyphName = "a"
-    glyphMap = await writableTestFont.getGlyphMap()
-    glyph = await writableTestFont.getGlyph(glyphName)
+    with contextlib.closing(writableTestFont):
+        glyphName = "a"
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph(glyphName)
 
-    for badLayerName in ["boooo/oooold", "boooo/oooold" * 5]:
-        safeLayerName = makeSafeLayerName(badLayerName)
+        for badLayerName in ["boooo/oooold", "boooo/oooold" * 5]:
+            safeLayerName = makeSafeLayerName(badLayerName)
 
-        layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
-        assert not layerPath.exists()
+            layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
+            assert not layerPath.exists()
 
-        glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
-        glyph.layers[badLayerName] = Layer(
-            glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
-        )
+            glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
+            glyph.layers[badLayerName] = Layer(
+                glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
+            )
 
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
-    assert layerPath.exists()
-    layerGlifPath = layerPath / f"{glyphName}.glif"
-    assert layerGlifPath.exists()
+        assert layerPath.exists()
+        layerGlifPath = layerPath / f"{glyphName}.glif"
+        assert layerGlifPath.exists()
 
-    mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
-    glifData = mainGlifPath.read_text()
-    assert glifData.splitlines() == layerNameMappingTestData
+        mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
+        glifData = mainGlifPath.read_text()
+        assert glifData.splitlines() == layerNameMappingTestData
 
 
 deleteItemsTestData = [
@@ -847,19 +853,20 @@ deleteItemsTestData = [
 
 
 async def test_delete_items(writableTestFont):
-    glyphName = "uni0030"
-    glyphMap = await writableTestFont.getGlyphMap()
-    glyph = await writableTestFont.getGlyph(glyphName)
+    with contextlib.closing(writableTestFont):
+        glyphName = "uni0030"
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph(glyphName)
 
-    glyph.axes = []
-    glyph.sources = [glyph.sources[0]]
-    layerName = glyph.sources[0].layerName
-    layer = glyph.layers[layerName]
-    layer.glyph.components = []
-    glyph.layers = {layerName: layer}
+        glyph.axes = []
+        glyph.sources = [glyph.sources[0]]
+        layerName = glyph.sources[0].layerName
+        layer = glyph.layers[layerName]
+        layer.glyph.components = []
+        glyph.layers = {layerName: layer}
 
-    await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
+        await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
-    mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
-    glifData = mainGlifPath.read_text()
-    assert glifData.splitlines() == deleteItemsTestData
+        mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
+        glifData = mainGlifPath.read_text()
+        assert glifData.splitlines() == deleteItemsTestData
