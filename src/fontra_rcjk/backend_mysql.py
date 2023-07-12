@@ -40,7 +40,7 @@ class RCJKMySQLBackend:
         self = cls()
         self.client = client
         self.fontUID = fontUID
-        self.pollExternalChangesInterval = 8
+        self.pollExternalChangesInterval = 10
         self._rcjkGlyphInfo = None
         self._glyphCache = LRUCache()
         self._tempFontItemsCache = TimedCache()
@@ -278,15 +278,14 @@ class RCJKMySQLBackend:
                     yield externalChange, reloadPattern
 
     async def _pollOnceForChanges(self):
-        await asyncio.wait(
-            [
-                asyncio.create_task(
-                    asyncio.sleep(self.pollExternalChangesInterval + 2 * random())
-                ),
-                asyncio.create_task(self._pollNowEvent.wait()),
-            ],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        try:
+            await asyncio.wait_for(
+                self._pollNowEvent.wait(),
+                timeout=self.pollExternalChangesInterval + 2 * random(),
+            )
+        except asyncio.TimeoutError:
+            pass
+
         self._pollNowEvent.clear()
         if self._lastPolledForChanges is None:
             # No glyphs have been requested, so there's nothing to update
