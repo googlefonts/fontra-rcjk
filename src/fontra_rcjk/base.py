@@ -136,7 +136,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
         defaultGlyph.lib.get("robocjk.deepComponents", ()), axisDefaults, None, None
     )
     if defaultComponents:
-        layers["foreground"].glyph.components = defaultComponents
+        layers["foreground"].glyph.components += defaultComponents
 
     fontraLayerNameMapping = defaultGlyph.lib.get("fontra.layerNames", {})
 
@@ -180,7 +180,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             defaultComponentLocations,
         )
         if components:
-            layerGlyph.components = components
+            layerGlyph.components += components
 
         location = varDict["location"]
         sources.append(
