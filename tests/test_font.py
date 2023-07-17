@@ -870,3 +870,128 @@ async def test_delete_items(writableTestFont):
         mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
         glifData = mainGlifPath.read_text()
         assert glifData.splitlines() == deleteItemsTestData
+
+
+expectedReadMixedComponentTestData = {
+    "name": "b",
+    "axes": [],
+    "sources": [
+        {
+            "name": "<default>",
+            "layerName": "foreground",
+            "location": {},
+            "inactive": False,
+            "customData": {"fontra.development.status": 0},
+        }
+    ],
+    "layers": {
+        "foreground": {
+            "glyph": {
+                "path": {"coordinates": [], "pointTypes": [], "contourInfo": []},
+                "components": [
+                    {
+                        "name": "a",
+                        "transformation": {
+                            "translateX": 0,
+                            "translateY": 0,
+                            "rotation": 0.0,
+                            "scaleX": 1.0,
+                            "scaleY": 1.0,
+                            "skewX": 0.0,
+                            "skewY": 0.0,
+                            "tCenterX": 0,
+                            "tCenterY": 0,
+                        },
+                        "location": {},
+                    },
+                    {
+                        "name": "DC_0033_00",
+                        "transformation": {
+                            "translateX": 30,
+                            "translateY": 0,
+                            "rotation": 0,
+                            "scaleX": 1,
+                            "scaleY": 1,
+                            "skewX": 0,
+                            "skewY": 0,
+                            "tCenterX": 0,
+                            "tCenterY": 0,
+                        },
+                        "location": {"X_X_bo": 0, "X_X_la": 0},
+                    },
+                ],
+                "xAdvance": 500,
+                "yAdvance": None,
+                "verticalOrigin": None,
+            },
+            "customData": {},
+        }
+    },
+    "customData": {},
+}
+
+
+async def test_readMixClassicAndVariableComponents():
+    font = getTestFont("rcjk")
+    with contextlib.closing(font):
+        glyph = await font.getGlyph("b")
+        assert expectedReadMixedComponentTestData == asdict(glyph)
+
+
+expectedWriteMixedComponentTestData = [
+    "<?xml version='1.0' encoding='UTF-8'?>",
+    '<glyph name="b" format="2">',
+    '  <advance width="500"/>',
+    '  <unicode hex="0062"/>',
+    "  <outline>",
+    '    <component base="a"/>',
+    "  </outline>",
+    "  <lib>",
+    "    <dict>",
+    "      <key>robocjk.deepComponents</key>",
+    "      <array>",
+    "        <dict>",
+    "          <key>coord</key>",
+    "          <dict>",
+    "            <key>X_X_bo</key>",
+    "            <integer>0</integer>",
+    "            <key>X_X_la</key>",
+    "            <integer>0</integer>",
+    "          </dict>",
+    "          <key>name</key>",
+    "          <string>DC_0033_00</string>",
+    "          <key>transform</key>",
+    "          <dict>",
+    "            <key>rotation</key>",
+    "            <integer>0</integer>",
+    "            <key>scalex</key>",
+    "            <integer>1</integer>",
+    "            <key>scaley</key>",
+    "            <integer>1</integer>",
+    "            <key>tcenterx</key>",
+    "            <integer>0</integer>",
+    "            <key>tcentery</key>",
+    "            <integer>0</integer>",
+    "            <key>x</key>",
+    "            <integer>30</integer>",
+    "            <key>y</key>",
+    "            <integer>0</integer>",
+    "          </dict>",
+    "        </dict>",
+    "      </array>",
+    "      <key>robocjk.status</key>",
+    "      <integer>0</integer>",
+    "    </dict>",
+    "  </lib>",
+    "</glyph>",
+]
+
+
+async def test_writeMixClassicAndVariableComponents(writableTestFont):
+    with contextlib.closing(writableTestFont):
+        glyphMap = await writableTestFont.getGlyphMap()
+        glyph = await writableTestFont.getGlyph("b")
+        await writableTestFont.putGlyph("b", glyph, glyphMap["b"])
+        mainGlifPath = writableTestFont.path / "characterGlyph" / "b.glif"
+        glifData = mainGlifPath.read_text()
+        assert expectedWriteMixedComponentTestData == glifData.splitlines()
