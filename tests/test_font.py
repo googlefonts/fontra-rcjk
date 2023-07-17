@@ -361,7 +361,7 @@ def getTestFont(backendName):
 
 
 getGlyphNamesTestData = [
-    ("rcjk", 81, ["DC_0030_00", "DC_0031_00", "DC_0032_00", "DC_0033_00"]),
+    ("rcjk", 82, ["DC_0030_00", "DC_0031_00", "DC_0032_00", "DC_0033_00"]),
 ]
 
 
@@ -378,7 +378,7 @@ async def test_getGlyphNames(backendName, numGlyphs, firstFourGlyphNames):
 
 
 getGlyphMapTestData = [
-    ("rcjk", 81, {"uni0031": [ord("1")]}),
+    ("rcjk", 82, {"uni0031": [ord("1")]}),
 ]
 
 
