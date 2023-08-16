@@ -153,6 +153,13 @@ def serializeGlyph(layerGlyphs, axisDefaults):
         )
     ]
     variationGlyphData = defaultGlyph.lib.get("robocjk.variationGlyphs", ())
+
+    activeLayerNames = set()
+    for varDict in variationGlyphData:
+        layerName = varDict.get("layerName")
+        if layerName:
+            activeLayerNames.add(layerName)
+
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
         inactiveFlag = not varDict.get("on", True)
         layerName = varDict.get("layerName")
@@ -161,7 +168,11 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             sourceName = layerName if layerName else f"source_{sourceIndex}"
         if not layerName:
             layerName = f"{sourceName}_{sourceIndex}_layer"
-            assert layerName not in layers, layerName
+            assert layerName not in activeLayerNames, layerName
+            # layerName should not exist in layers, and if it does,
+            # it must be a zombie layer that should have been deleted.
+            # We'll delete it to make sure we don't reuse its data
+            layers.pop(layerName, None)
 
         xAdvance = defaultGlyph.width
         if layerName in layers:
