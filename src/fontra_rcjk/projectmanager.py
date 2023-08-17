@@ -176,7 +176,18 @@ class AuthorizedClient:
         if fontHandler is None:
             _, fontUID = self.projectMapping[path]
             backend = RCJKMySQLBackend.fromRCJKClient(self.rcjkClient, fontUID)
-            fontHandler = FontHandler(backend, readOnly=self.readOnly)
+
+            async def closeFontHandler():
+                logger.info(f"closing FontHandler for '{path}'")
+                del self.fontHandlers[path]
+                await fontHandler.close()
+
+            logger.info(f"new FontHandler for '{path}'")
+            fontHandler = FontHandler(
+                backend,
+                readOnly=self.readOnly,
+                allConnectionsClosedCallback=closeFontHandler,
+            )
             await fontHandler.startTasks()
             self.fontHandlers[path] = fontHandler
         return fontHandler
