@@ -231,7 +231,12 @@ def serializeComponents(
         )
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
-        name = deepCompoDict["name"] if "name" in deepCompoDict else dcNames[index]
+        impliedName = (
+            dcNames[index]
+            if dcNames and index < len(dcNames)
+            else f"ComponentNotFound#{index}"
+        )
+        name = deepCompoDict["name"] if "name" in deepCompoDict else impliedName
         component = Component(name)
         if deepCompoDict["coord"]:
             component.location = cleanupLocation(
