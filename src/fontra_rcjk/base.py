@@ -115,19 +115,7 @@ def cleanupAxis(axisDict):
     return LocalAxis(**axisDict)
 
 
-def getComponentAxisDefaults(layerGlyphs, layerGlyphCache):
-    axisDefaults = {}
-    for componentGlyphName in layerGlyphs["foreground"].getComponentNames():
-        componentGlyph = layerGlyphCache.get(componentGlyphName)
-        if componentGlyph is not None:
-            axisDefaults[componentGlyphName] = {
-                axis.name: axis.defaultValue
-                for axis in componentGlyph["foreground"].axes
-            }
-    return axisDefaults
-
-
-def serializeGlyph(layerGlyphs, axisDefaults):
+def serializeGlyph(layerGlyphs):
     layers = {
         layerName: Layer(glyph=glyph.serialize())
         for layerName, glyph in layerGlyphs.items()
@@ -135,7 +123,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
 
     defaultGlyph = layerGlyphs["foreground"]
     defaultComponents = serializeComponents(
-        defaultGlyph.lib.get("robocjk.deepComponents", ()), axisDefaults, None, None
+        defaultGlyph.lib.get("robocjk.deepComponents", ()), None
     )
     if defaultComponents:
         layers["foreground"].glyph.components += defaultComponents
@@ -143,7 +131,6 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     fontraLayerNameMapping = defaultGlyph.lib.get("fontra.layerNames", {})
 
     dcNames = [c.name for c in defaultComponents]
-    defaultComponentLocations = [compo.location for compo in defaultComponents]
 
     sources = [
         Source(
@@ -186,12 +173,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
             xAdvance = varDict["width"]
         layerGlyph.xAdvance = xAdvance
 
-        components = serializeComponents(
-            varDict.get("deepComponents", ()),
-            axisDefaults,
-            dcNames,
-            defaultComponentLocations,
-        )
+        components = serializeComponents(varDict.get("deepComponents", ()), dcNames)
         if components:
             layerGlyph.components += components
 
@@ -220,15 +202,7 @@ def serializeGlyph(layerGlyphs, axisDefaults):
     )
 
 
-def serializeComponents(
-    deepComponents, axisDefaults, dcNames, neutralComponentLocations
-):
-    if neutralComponentLocations is None:
-        neutralComponentLocations = [{}] * len(deepComponents)
-    elif len(neutralComponentLocations) < len(deepComponents):
-        neutralComponentLocations = neutralComponentLocations + [{}] * (
-            len(deepComponents) - len(neutralComponentLocations)
-        )
+def serializeComponents(deepComponents, dcNames):
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
         impliedName = (
@@ -239,22 +213,10 @@ def serializeComponents(
         name = deepCompoDict["name"] if "name" in deepCompoDict else impliedName
         component = Component(name)
         if deepCompoDict["coord"]:
-            component.location = cleanupLocation(
-                deepCompoDict["coord"],
-                axisDefaults.get(name),
-                neutralComponentLocations[index],
-            )
+            component.location = dict(deepCompoDict["coord"])
         component.transformation = convertTransformation(deepCompoDict["transform"])
         components.append(component)
     return components
-
-
-def cleanupLocation(location, axisDefaults, neutralLocation):
-    if axisDefaults is None:
-        return dict(location)
-    return {
-        a: location.get(a, neutralLocation.get(a, v)) for a, v in axisDefaults.items()
-    }
 
 
 def convertTransformation(rcjkTransformation):

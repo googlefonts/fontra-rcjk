@@ -9,7 +9,6 @@ from fontra.backends.designspace import makeGlyphMapChange
 from .base import (
     GLIFGlyph,
     TimedCache,
-    getComponentAxisDefaults,
     serializeGlyph,
     standardFontLibItems,
     unpackAxes,
@@ -117,8 +116,7 @@ class RCJKMySQLBackend:
         if self._glyphMap is not None and glyphName not in self._glyphMap:
             return None
         layerGlyphs = await self._getLayerGlyphs(glyphName)
-        axisDefaults = getComponentAxisDefaults(layerGlyphs, self._glyphCache)
-        return serializeGlyph(layerGlyphs, axisDefaults)
+        return serializeGlyph(layerGlyphs)
 
     async def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._glyphCache.get(glyphName)
