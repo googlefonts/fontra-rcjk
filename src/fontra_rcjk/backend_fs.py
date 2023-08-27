@@ -10,7 +10,6 @@ from fontTools.ufoLib.filenames import userNameToFileName
 from .base import (
     GLIFGlyph,
     TimedCache,
-    getComponentAxisDefaults,
     serializeGlyph,
     standardFontLibItems,
     unpackAxes,
@@ -99,8 +98,7 @@ class RCJKBackend:
 
     async def getGlyph(self, glyphName):
         layerGlyphs = self._getLayerGlyphs(glyphName)
-        axisDefaults = getComponentAxisDefaults(layerGlyphs, self._tempGlyphCache)
-        return serializeGlyph(layerGlyphs, axisDefaults)
+        return serializeGlyph(layerGlyphs)
 
     def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._tempGlyphCache.get(glyphName)
