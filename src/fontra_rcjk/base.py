@@ -36,7 +36,7 @@ class GLIFGlyph:
     def fromGLIFData(cls, glifData):
         self = cls()
         pen = PackedPathPointPen()
-        readGlyphFromString(glifData, self, pen)
+        readGlyphFromString(glifData, self, pen, validate=False)
         self.path = pen.getPath()
         self.components = pen.components
         return self
