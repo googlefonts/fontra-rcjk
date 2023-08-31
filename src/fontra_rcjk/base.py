@@ -42,13 +42,13 @@ class GLIFGlyph:
         return self
 
     @classmethod
-    def fromStaticGlyph(cls, glyphName, staticGlyph, forceVariableComponents=False):
+    def fromStaticGlyph(cls, glyphName, staticGlyph, allowClassicComponents=False):
         self = cls()
-        self.updateFromStaticGlyph(glyphName, staticGlyph, forceVariableComponents)
+        self.updateFromStaticGlyph(glyphName, staticGlyph, allowClassicComponents)
         return self
 
     def updateFromStaticGlyph(
-        self, glyphName, staticGlyph, forceVariableComponents=False
+        self, glyphName, staticGlyph, allowClassicComponents=False
     ):
         self.name = glyphName
         self.width = staticGlyph.xAdvance
@@ -56,7 +56,7 @@ class GLIFGlyph:
         self.components = []
         self.variableComponents = []
         for component in staticGlyph.components:
-            if component.location or forceVariableComponents:
+            if component.location or not allowClassicComponents:
                 self.variableComponents.append(component)
             else:
                 # classic component
@@ -244,16 +244,6 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerG
         # TODO: better exception
         raise AssertionError("no default source/layer found")
 
-    haveVariableComponents = any(
-        any(
-            compo.location
-            or compo.transformation.tCenterX
-            or compo.transformation.tCenterY
-            for compo in layer.glyph.components
-        )
-        for layer in glyph.layers.values()
-    )
-
     layerGlyphs = {}
     for layerName, layer in glyph.layers.items():
         if layerName == defaultLayerName:
@@ -264,7 +254,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerG
             layerGlyph = GLIFGlyph()
         else:
             layerGlyph = layerGlyph.copy()
-        layerGlyph.updateFromStaticGlyph(glyphName, layer.glyph, haveVariableComponents)
+        layerGlyph.updateFromStaticGlyph(glyphName, layer.glyph)
         layerGlyphs[layerName] = layerGlyph
         layerGlyphs[layerName].unicodes = unicodes
     defaultGlyph = layerGlyphs["foreground"]
