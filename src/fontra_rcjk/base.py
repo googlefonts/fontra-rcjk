@@ -92,7 +92,7 @@ class GLIFGlyph:
         }
         return sorted(classicComponentNames | deepComponentNames)
 
-    def serialize(self):
+    def toStaticGlyph(self):
         return StaticGlyph(
             xAdvance=self.width,
             path=deepcopy(self.path),
@@ -117,7 +117,7 @@ def cleanupAxis(axisDict):
 
 def serializeGlyph(layerGlyphs):
     layers = {
-        layerName: Layer(glyph=glyph.serialize())
+        layerName: Layer(glyph=glyph.toStaticGlyph())
         for layerName, glyph in layerGlyphs.items()
     }
 
