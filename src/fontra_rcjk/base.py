@@ -122,7 +122,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     }
 
     defaultGlyph = layerGlyphs["foreground"]
-    defaultComponents = serializeComponents(
+    defaultComponents = buildVariableComponentsFromLibComponents(
         defaultGlyph.lib.get("robocjk.deepComponents", ()), None
     )
     if defaultComponents:
@@ -173,7 +173,9 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             xAdvance = varDict["width"]
         layerGlyph.xAdvance = xAdvance
 
-        components = serializeComponents(varDict.get("deepComponents", ()), dcNames)
+        components = buildVariableComponentsFromLibComponents(
+            varDict.get("deepComponents", ()), dcNames
+        )
         if components:
             layerGlyph.components += components
 
@@ -202,7 +204,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     )
 
 
-def serializeComponents(deepComponents, dcNames):
+def buildVariableComponentsFromLibComponents(deepComponents, dcNames):
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
         impliedName = (
