@@ -9,10 +9,10 @@ from fontra.backends.designspace import makeGlyphMapChange
 from .base import (
     GLIFGlyph,
     TimedCache,
-    serializeGlyph,
+    buildLayerGlyphsFromVariableGlyph,
+    buildVariableGlyphFromLayerGlyphs,
     standardFontLibItems,
     unpackAxes,
-    unserializeGlyph,
 )
 from .client import HTTPError
 
@@ -116,7 +116,7 @@ class RCJKMySQLBackend:
         if self._glyphMap is not None and glyphName not in self._glyphMap:
             return None
         layerGlyphs = await self._getLayerGlyphs(glyphName)
-        return serializeGlyph(layerGlyphs)
+        return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
 
     async def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._glyphCache.get(glyphName)
@@ -142,7 +142,7 @@ class RCJKMySQLBackend:
     def _populateGlyphCache(self, glyphName, glyphData):
         if glyphName in self._glyphCache:
             return
-        self._glyphCache[glyphName] = buildLayerGlyphs(glyphData)
+        self._glyphCache[glyphName] = buildLayerGlyphsFromResponseData(glyphData)
         self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(glyphData)
         for subGlyphData in glyphData.get("made_of", ()):
             subGlyphName = subGlyphData["name"]
@@ -171,7 +171,7 @@ class RCJKMySQLBackend:
 
         existingLayerData = {k: v.asGLIFData() for k, v in existingLayerGlyphs.items()}
 
-        layerGlyphs = unserializeGlyph(
+        layerGlyphs = buildLayerGlyphsFromVariableGlyph(
             glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
         )
 
@@ -359,7 +359,7 @@ def getUpdatedTimeStamp(info):
     return timeStamp
 
 
-def buildLayerGlyphs(glyphData):
+def buildLayerGlyphsFromResponseData(glyphData):
     layerGLIFData = [("foreground", glyphData["data"])]
     layerGLIFData.extend(
         (layer["group_name"], layer["data"]) for layer in glyphData.get("layers", ())

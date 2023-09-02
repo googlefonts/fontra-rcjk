@@ -92,7 +92,7 @@ class GLIFGlyph:
         }
         return sorted(classicComponentNames | deepComponentNames)
 
-    def serialize(self):
+    def toStaticGlyph(self):
         return StaticGlyph(
             xAdvance=self.width,
             path=deepcopy(self.path),
@@ -115,14 +115,14 @@ def cleanupAxis(axisDict):
     return LocalAxis(**axisDict)
 
 
-def serializeGlyph(layerGlyphs):
+def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     layers = {
-        layerName: Layer(glyph=glyph.serialize())
+        layerName: Layer(glyph=glyph.toStaticGlyph())
         for layerName, glyph in layerGlyphs.items()
     }
 
     defaultGlyph = layerGlyphs["foreground"]
-    defaultComponents = serializeComponents(
+    defaultComponents = buildVariableComponentsFromLibComponents(
         defaultGlyph.lib.get("robocjk.deepComponents", ()), None
     )
     if defaultComponents:
@@ -173,7 +173,9 @@ def serializeGlyph(layerGlyphs):
             xAdvance = varDict["width"]
         layerGlyph.xAdvance = xAdvance
 
-        components = serializeComponents(varDict.get("deepComponents", ()), dcNames)
+        components = buildVariableComponentsFromLibComponents(
+            varDict.get("deepComponents", ()), dcNames
+        )
         if components:
             layerGlyph.components += components
 
@@ -202,7 +204,7 @@ def serializeGlyph(layerGlyphs):
     )
 
 
-def serializeComponents(deepComponents, dcNames):
+def buildVariableComponentsFromLibComponents(deepComponents, dcNames):
     components = []
     for index, deepCompoDict in enumerate(deepComponents):
         impliedName = (
@@ -232,7 +234,9 @@ def convertTransformation(rcjkTransformation):
     )
 
 
-def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs):
+def buildLayerGlyphsFromVariableGlyph(
+    glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
+):
     fontraLayerNameMapping = {}
     defaultLayerName = None
     for source in glyph.sources:
@@ -264,7 +268,9 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerG
     else:
         defaultGlyph.lib.pop("robocjk.axes", None)
 
-    deepComponents = unserializeComponents(defaultGlyph.variableComponents)
+    deepComponents = buildLibComponentsFromVariableComponents(
+        defaultGlyph.variableComponents
+    )
     if deepComponents:
         defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
     else:
@@ -288,7 +294,9 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerG
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
 
-        deepComponents = unserializeComponents(layerGlyph.variableComponents)
+        deepComponents = buildLibComponentsFromVariableComponents(
+            layerGlyph.variableComponents
+        )
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
@@ -323,7 +331,7 @@ def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerG
     return layerGlyphs
 
 
-def unserializeComponents(variableComponents):
+def buildLibComponentsFromVariableComponents(variableComponents):
     components = []
     for compo in variableComponents:
         compoDict = dict(name=compo.name)
