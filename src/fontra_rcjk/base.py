@@ -115,7 +115,7 @@ def cleanupAxis(axisDict):
     return LocalAxis(**axisDict)
 
 
-def serializeGlyph(layerGlyphs):
+def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     layers = {
         layerName: Layer(glyph=glyph.toStaticGlyph())
         for layerName, glyph in layerGlyphs.items()

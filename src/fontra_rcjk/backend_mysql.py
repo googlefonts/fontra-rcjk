@@ -10,7 +10,7 @@ from .base import (
     GLIFGlyph,
     TimedCache,
     buildLayerGlyphsFromVariableGlyph,
-    serializeGlyph,
+    buildVariableGlyphFromLayerGlyphs,
     standardFontLibItems,
     unpackAxes,
 )
@@ -116,7 +116,7 @@ class RCJKMySQLBackend:
         if self._glyphMap is not None and glyphName not in self._glyphMap:
             return None
         layerGlyphs = await self._getLayerGlyphs(glyphName)
-        return serializeGlyph(layerGlyphs)
+        return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
 
     async def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._glyphCache.get(glyphName)

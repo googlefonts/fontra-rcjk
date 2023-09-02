@@ -11,7 +11,7 @@ from .base import (
     GLIFGlyph,
     TimedCache,
     buildLayerGlyphsFromVariableGlyph,
-    serializeGlyph,
+    buildVariableGlyphFromLayerGlyphs,
     standardFontLibItems,
     unpackAxes,
 )
@@ -98,7 +98,7 @@ class RCJKBackend:
 
     async def getGlyph(self, glyphName):
         layerGlyphs = self._getLayerGlyphs(glyphName)
-        return serializeGlyph(layerGlyphs)
+        return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
 
     def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._tempGlyphCache.get(glyphName)
