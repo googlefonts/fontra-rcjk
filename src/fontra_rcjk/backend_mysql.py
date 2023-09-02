@@ -9,10 +9,10 @@ from fontra.backends.designspace import makeGlyphMapChange
 from .base import (
     GLIFGlyph,
     TimedCache,
+    buildLayerGlyphsFromVariableGlyph,
     serializeGlyph,
     standardFontLibItems,
     unpackAxes,
-    unserializeGlyph,
 )
 from .client import HTTPError
 
@@ -171,7 +171,7 @@ class RCJKMySQLBackend:
 
         existingLayerData = {k: v.asGLIFData() for k, v in existingLayerGlyphs.items()}
 
-        layerGlyphs = unserializeGlyph(
+        layerGlyphs = buildLayerGlyphsFromVariableGlyph(
             glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
         )
 

@@ -10,10 +10,10 @@ from fontTools.ufoLib.filenames import userNameToFileName
 from .base import (
     GLIFGlyph,
     TimedCache,
+    buildLayerGlyphsFromVariableGlyph,
     serializeGlyph,
     standardFontLibItems,
     unpackAxes,
-    unserializeGlyph,
 )
 
 glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
@@ -134,7 +134,7 @@ class RCJKBackend:
             existingLayerGlyphs = {}
         else:
             existingLayerGlyphs = self._getLayerGlyphs(glyphName)
-        layerGlyphs = unserializeGlyph(
+        layerGlyphs = buildLayerGlyphsFromVariableGlyph(
             glyphName, glyph, unicodes, self._defaultLocation, existingLayerGlyphs
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)

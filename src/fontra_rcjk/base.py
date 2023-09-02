@@ -232,7 +232,9 @@ def convertTransformation(rcjkTransformation):
     )
 
 
-def unserializeGlyph(glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs):
+def buildLayerGlyphsFromVariableGlyph(
+    glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
+):
     fontraLayerNameMapping = {}
     defaultLayerName = None
     for source in glyph.sources:
