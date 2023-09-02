@@ -142,7 +142,7 @@ class RCJKMySQLBackend:
     def _populateGlyphCache(self, glyphName, glyphData):
         if glyphName in self._glyphCache:
             return
-        self._glyphCache[glyphName] = buildLayerGlyphs(glyphData)
+        self._glyphCache[glyphName] = buildLayerGlyphsFromResponseData(glyphData)
         self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(glyphData)
         for subGlyphData in glyphData.get("made_of", ()):
             subGlyphName = subGlyphData["name"]
@@ -359,7 +359,7 @@ def getUpdatedTimeStamp(info):
     return timeStamp
 
 
-def buildLayerGlyphs(glyphData):
+def buildLayerGlyphsFromResponseData(glyphData):
     layerGLIFData = [("foreground", glyphData["data"])]
     layerGLIFData.extend(
         (layer["group_name"], layer["data"]) for layer in glyphData.get("layers", ())
