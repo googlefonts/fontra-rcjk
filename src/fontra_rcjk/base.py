@@ -266,7 +266,9 @@ def buildLayerGlyphsFromVariableGlyph(
     else:
         defaultGlyph.lib.pop("robocjk.axes", None)
 
-    deepComponents = unserializeComponents(defaultGlyph.variableComponents)
+    deepComponents = buildLibComponentsFromVariableComponents(
+        defaultGlyph.variableComponents
+    )
     if deepComponents:
         defaultGlyph.lib["robocjk.deepComponents"] = deepComponents
     else:
@@ -290,7 +292,9 @@ def buildLayerGlyphsFromVariableGlyph(
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
 
-        deepComponents = unserializeComponents(layerGlyph.variableComponents)
+        deepComponents = buildLibComponentsFromVariableComponents(
+            layerGlyph.variableComponents
+        )
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
@@ -325,7 +329,7 @@ def buildLayerGlyphsFromVariableGlyph(
     return layerGlyphs
 
 
-def unserializeComponents(variableComponents):
+def buildLibComponentsFromVariableComponents(variableComponents):
     components = []
     for compo in variableComponents:
         compoDict = dict(name=compo.name)
