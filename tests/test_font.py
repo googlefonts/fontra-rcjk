@@ -253,13 +253,13 @@ getGlyphTestData = [
                 {
                     "name": "X_X_bo",
                     "location": {"X_X_bo": 1.0},
-                    "layerName": "X_X_bo_1_layer",
+                    "layerName": "X_X_bo",
                     "customData": {"fontra.development.status": 0},
                 },
                 {
                     "name": "X_X_la",
                     "location": {"X_X_la": 1.0},
-                    "layerName": "X_X_la_2_layer",
+                    "layerName": "X_X_la",
                     "customData": {"fontra.development.status": 0},
                 },
             ],
@@ -289,7 +289,7 @@ getGlyphTestData = [
                         "xAdvance": 600,
                     },
                 },
-                "X_X_bo_1_layer": {
+                "X_X_bo": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],
@@ -314,7 +314,7 @@ getGlyphTestData = [
                         "xAdvance": 600,
                     },
                 },
-                "X_X_la_2_layer": {
+                "X_X_la": {
                     "glyph": {
                         "path": {
                             "contourInfo": [],

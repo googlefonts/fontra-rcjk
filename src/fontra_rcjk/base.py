@@ -147,6 +147,12 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
         if layerName:
             activeLayerNames.add(layerName)
 
+    # Only glyphs with outlines (or classic components) have "layers", in the rcjk
+    # sense of the word, but Fontra always needs unique layer names, as it doesn't
+    # make the distinction. So we keep a set of made up names, so we can ensure
+    # we create no duplicates.
+    syntheticLayerNames = set()
+
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
         inactiveFlag = not varDict.get("on", True)
         layerName = varDict.get("layerName")
@@ -154,12 +160,18 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
         if not sourceName:
             sourceName = layerName if layerName else f"source_{sourceIndex}"
         if not layerName:
-            layerName = f"{sourceName}_{sourceIndex}_layer"
+            layerName = sourceName
+            counter = 1
+            while layerName in syntheticLayerNames:
+                layerName = f"{sourceName}#{counter}"
+                counter += 1
             assert layerName not in activeLayerNames, layerName
             # layerName should not exist in layers, and if it does,
             # it must be a zombie layer that should have been deleted.
             # We'll delete it to make sure we don't reuse its data
             layers.pop(layerName, None)
+
+        syntheticLayerNames.add(layerName)
 
         xAdvance = defaultGlyph.width
         if layerName in layers:
