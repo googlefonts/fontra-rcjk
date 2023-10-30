@@ -254,6 +254,24 @@ class RCJKMySQLBackend:
         self._rcjkGlyphInfo[glyphName] = ("CG", glyphID)
         self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(response["data"])
 
+    async def deleteGlyph(self, glyphName):
+        if glyphName not in self._rcjkGlyphInfo:
+            raise KeyError(f"Glyph '{glyphName}' does not exist")
+
+        logger.info(f"Deleting glyph '{glyphName}'")
+
+        _ = await self._callGlyphMethod(glyphName, "lock", return_data=False)
+        try:
+            _ = await self._callGlyphMethod(glyphName, "delete")
+        except Exception:
+            _ = await self._callGlyphMethod(glyphName, "unlock", return_data=False)
+            raise
+
+        self._glyphTimeStamps[glyphName] = None
+        del self._rcjkGlyphInfo[glyphName]
+        del self._glyphMap[glyphName]
+        self._glyphCache.pop(glyphName, None)
+
     async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
         typeCode, glyphID = self._rcjkGlyphInfo.get(glyphName, ("CG", None))
         assert glyphID is not None
@@ -303,6 +321,9 @@ class RCJKMySQLBackend:
         for glyphInfo in responseData.get("deleted_glifs", []):
             glyphName = glyphInfo["name"]
             if not glyphInfo["group_name"]:
+                if self._glyphTimeStamps.get(glyphName) is None:
+                    # We made this change ourselves
+                    continue
                 logger.info(f"Found deleted glyph {glyphName}")
                 glyphMapUpdates[glyphName] = None
                 del self._glyphMap[glyphName]
