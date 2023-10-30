@@ -282,8 +282,8 @@ class RCJKGlyphSet:
             del layerContents[mainFileName]
 
     def deleteGlyph(self, glyphName):
-        mainPath = self.contents[glyphName]
         del self.contents[glyphName]
+        mainPath = self.contents[glyphName]
         pathsToDelete = [mainPath]
         mainFileName = mainPath.name
         for layerName, layerContents in self.layers.items():
