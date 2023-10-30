@@ -142,6 +142,16 @@ class RCJKBackend:
         self._glyphMap[glyphName] = unicodes
         self._tempGlyphCache[glyphName] = layerGlyphs
 
+    async def deleteGlyph(self, glyphName):
+        if glyphName not in self._glyphMap:
+            raise KeyError(f"Glyph '{glyphName}' does not exist")
+
+        for gs, _ in self._iterGlyphSets():
+            if glyphName in gs:
+                gs.deleteGlyph(glyphName)
+
+        del self._glyphMap[glyphName]
+
     async def getFontLib(self):
         fontLib = {}
         libPath = self.path / "fontLib.json"
@@ -270,3 +280,18 @@ class RCJKGlyphSet:
             layerPath.unlink(missing_ok=True)
             self.registerWrittenPath(layerPath, deleted=True)
             del layerContents[mainFileName]
+
+    def deleteGlyph(self, glyphName):
+        mainPath = self.contents[glyphName]
+        del self.contents[glyphName]
+        pathsToDelete = [mainPath]
+        mainFileName = mainPath.name
+        for layerName, layerContents in self.layers.items():
+            layerPath = layerContents.get(mainFileName)
+            if layerPath is not None:
+                pathsToDelete.append(layerPath)
+                del layerContents[mainFileName]
+        for layerPath in pathsToDelete:
+            layerPath.unlink()
+            self.registerWrittenPath(layerPath, deleted=True)
+        del self.glyphMap[glyphName]

@@ -1017,3 +1017,26 @@ async def test_writeMixClassicAndVariableComponents(writableTestFont):
         mainGlifPath = writableTestFont.path / "characterGlyph" / "b.glif"
         glifData = mainGlifPath.read_text()
         assert expectedWriteMixedComponentTestData == glifData.splitlines()
+
+
+async def test_deleteGlyph(writableTestFont):
+    glyphName = "eight_00"
+    with contextlib.closing(writableTestFont):
+        glyphMap = await writableTestFont.getGlyphMap()
+        assert glyphName in glyphMap
+        glyphPaths = list(writableTestFont.path.glob(f"**/{glyphName}.glif"))
+        assert len(glyphPaths) == 3
+
+        await writableTestFont.deleteGlyph(glyphName)
+
+        glyphMap = await writableTestFont.getGlyphMap()
+        assert glyphName not in glyphMap
+        glyphPaths = list(writableTestFont.path.glob(f"**/{glyphName}.glif"))
+        assert len(glyphPaths) == 0
+
+
+async def test_deleteGlyphRaisesKeyError(writableTestFont):
+    glyphName = "A.doesnotexist"
+    with contextlib.closing(writableTestFont):
+        with pytest.raises(KeyError, match="Glyph 'A.doesnotexist' does not exist"):
+            await writableTestFont.deleteGlyph(glyphName)
