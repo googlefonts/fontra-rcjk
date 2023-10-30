@@ -268,6 +268,8 @@ class RCJKMySQLBackend:
             _ = await self._callGlyphMethod(glyphName, "unlock", return_data=False)
             raise
 
+        # We set the time stamp to None so we can later distinguish "we deleted this
+        # glyph" from "this glyph was externally deleted"
         self._glyphTimeStamps[glyphName] = None
         del self._rcjkGlyphInfo[glyphName]
         del self._glyphMap[glyphName]
