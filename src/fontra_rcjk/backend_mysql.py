@@ -327,6 +327,10 @@ class RCJKMySQLBackend:
                 if self._glyphTimeStamps.get(glyphName) is None:
                     # We made this change ourselves
                     continue
+                if glyphInfo["id"] != self._rcjkGlyphInfo[glyphName]:
+                    # The glyph was recreated in the mean time, ignore
+                    continue
+
                 logger.info(f"Found deleted glyph {glyphName}")
                 glyphMapUpdates[glyphName] = None
                 del self._glyphMap[glyphName]
