@@ -241,6 +241,7 @@ class RCJKMySQLBackend:
         # with a lock acquired. Our dummy glyph has to have a glyph name, but
         # we're setting .width to an arbitrary positive value so we can still
         # see it if anything goes wrong.
+        logger.info(f"Creating new glyph '{glyphName}'")
         dummyGlyph = GLIFGlyph()
         dummyGlyph.name = glyphName
         dummyGlyph.unicodes = unicodes
