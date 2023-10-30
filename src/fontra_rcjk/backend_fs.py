@@ -84,7 +84,7 @@ class RCJKBackend:
             return self.characterGlyphGlyphSet
 
     async def getGlyphMap(self):
-        return self._glyphMap
+        return dict(self._glyphMap)
 
     async def getGlobalAxes(self):
         axes = getattr(self, "_globalAxes", None)
