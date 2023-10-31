@@ -128,7 +128,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     if defaultComponents:
         layers["foreground"].glyph.components += defaultComponents
 
-    fontraLayerNameMapping = defaultGlyph.lib.get("fontra.layerNames", {})
+    fontraLayerNameMapping = dict(defaultGlyph.lib.get("fontra.layerNames", {}))
 
     dcNames = [c.name for c in defaultComponents]
 
@@ -170,6 +170,10 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             # it must be a zombie layer that should have been deleted.
             # We'll delete it to make sure we don't reuse its data
             layers.pop(layerName, None)
+
+        fontraLayerNameMapping[layerName] = varDict.get(
+            "fontraLayerName"
+        ) or fontraLayerNameMapping.get(layerName, layerName)
 
         syntheticLayerNames.add(layerName)
 
@@ -314,11 +318,14 @@ def buildLayerGlyphsFromVariableGlyph(
 
         if layerGlyph.hasOutlineOrClassicComponents():
             safeLayerName = makeSafeLayerName(source.layerName)
+            varDict["layerName"] = safeLayerName
             if safeLayerName != source.layerName:
                 fontraLayerNameMapping[safeLayerName] = source.layerName
-            varDict["layerName"] = safeLayerName
+                varDict["fontraLayerName"] = source.layerName
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
+            if source.layerName != source.name:
+                varDict["fontraLayerName"] = source.layerName
             # This is a "virtual" layer: all info will go to defaultGlyph.lib,
             # and no "true" layer will be written
             del layerGlyphs[source.layerName]
@@ -331,14 +338,14 @@ def buildLayerGlyphsFromVariableGlyph(
         defaultGlyph.lib.pop("robocjk.variationGlyphs", None)
 
     if fontraLayerNameMapping:
-        defaultGlyph.lib["fontra.layerNames"] = fontraLayerNameMapping
         rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
         layerGlyphs = {
             rcjkLayerNameMapping.get(layerName, layerName): layerGlyph
             for layerName, layerGlyph in layerGlyphs.items()
         }
-    else:
-        defaultGlyph.lib.pop("fontra.layerNames", None)
+
+    # Get rid of legacy data
+    defaultGlyph.lib.pop("fontra.layerNames", None)
 
     return layerGlyphs
 
