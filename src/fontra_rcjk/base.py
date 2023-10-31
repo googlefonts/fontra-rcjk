@@ -321,7 +321,8 @@ def buildLayerGlyphsFromVariableGlyph(
             varDict["layerName"] = safeLayerName
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
-            varDict["fontraLayerName"] = source.layerName
+            if source.layerName != source.name:
+                varDict["fontraLayerName"] = source.layerName
             # This is a "virtual" layer: all info will go to defaultGlyph.lib,
             # and no "true" layer will be written
             del layerGlyphs[source.layerName]
