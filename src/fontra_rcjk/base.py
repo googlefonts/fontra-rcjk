@@ -128,7 +128,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     if defaultComponents:
         layers["foreground"].glyph.components += defaultComponents
 
-    fontraLayerNameMapping = defaultGlyph.lib.get("fontra.layerNames", {})
+    fontraLayerNameMapping = dict(defaultGlyph.lib.get("fontra.layerNames", {}))
 
     dcNames = [c.name for c in defaultComponents]
 
@@ -156,7 +156,6 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
         inactiveFlag = not varDict.get("on", True)
         layerName = varDict.get("layerName")
-        fontraLayerName = varDict.get("fontraLayerName")
         sourceName = varDict.get("sourceName")
         if not sourceName:
             sourceName = layerName if layerName else f"source_{sourceIndex}"
@@ -172,6 +171,10 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             # We'll delete it to make sure we don't reuse its data
             layers.pop(layerName, None)
 
+        fontraLayerNameMapping[layerName] = varDict.get(
+            "fontraLayerName"
+        ) or fontraLayerNameMapping.get(layerName, layerName)
+
         syntheticLayerNames.add(layerName)
 
         xAdvance = defaultGlyph.width
@@ -180,7 +183,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             xAdvance = layerGlyphs[layerName].width
         else:
             layerGlyph = StaticGlyph()
-            layers[fontraLayerName or layerName] = Layer(glyph=layerGlyph)
+            layers[layerName] = Layer(glyph=layerGlyph)
 
         if "width" in varDict:
             xAdvance = varDict["width"]
@@ -197,8 +200,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             Source(
                 name=sourceName,
                 location=location,
-                layerName=fontraLayerName
-                or fontraLayerNameMapping.get(layerName, layerName),
+                layerName=fontraLayerNameMapping.get(layerName, layerName),
                 inactive=inactiveFlag,
                 customData={FONTRA_STATUS_KEY: varDict.get("status", 0)},
             )
@@ -316,9 +318,10 @@ def buildLayerGlyphsFromVariableGlyph(
 
         if layerGlyph.hasOutlineOrClassicComponents():
             safeLayerName = makeSafeLayerName(source.layerName)
+            varDict["layerName"] = safeLayerName
             if safeLayerName != source.layerName:
                 fontraLayerNameMapping[safeLayerName] = source.layerName
-            varDict["layerName"] = safeLayerName
+                varDict["fontraLayerName"] = source.layerName
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
             if source.layerName != source.name:
@@ -335,14 +338,14 @@ def buildLayerGlyphsFromVariableGlyph(
         defaultGlyph.lib.pop("robocjk.variationGlyphs", None)
 
     if fontraLayerNameMapping:
-        defaultGlyph.lib["fontra.layerNames"] = fontraLayerNameMapping
         rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
         layerGlyphs = {
             rcjkLayerNameMapping.get(layerName, layerName): layerGlyph
             for layerName, layerGlyph in layerGlyphs.items()
         }
-    else:
-        defaultGlyph.lib.pop("fontra.layerNames", None)
+
+    # Get rid of legacy data
+    defaultGlyph.lib.pop("fontra.layerNames", None)
 
     return layerGlyphs
 
