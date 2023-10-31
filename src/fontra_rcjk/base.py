@@ -156,6 +156,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
     for sourceIndex, varDict in enumerate(variationGlyphData, 1):
         inactiveFlag = not varDict.get("on", True)
         layerName = varDict.get("layerName")
+        fontraLayerName = varDict.get("fontraLayerName")
         sourceName = varDict.get("sourceName")
         if not sourceName:
             sourceName = layerName if layerName else f"source_{sourceIndex}"
@@ -179,7 +180,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             xAdvance = layerGlyphs[layerName].width
         else:
             layerGlyph = StaticGlyph()
-            layers[layerName] = Layer(glyph=layerGlyph)
+            layers[fontraLayerName or layerName] = Layer(glyph=layerGlyph)
 
         if "width" in varDict:
             xAdvance = varDict["width"]
@@ -196,7 +197,8 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs):
             Source(
                 name=sourceName,
                 location=location,
-                layerName=fontraLayerNameMapping.get(layerName, layerName),
+                layerName=fontraLayerName
+                or fontraLayerNameMapping.get(layerName, layerName),
                 inactive=inactiveFlag,
                 customData={FONTRA_STATUS_KEY: varDict.get("status", 0)},
             )
@@ -319,6 +321,7 @@ def buildLayerGlyphsFromVariableGlyph(
             varDict["layerName"] = safeLayerName
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
+            varDict["fontraLayerName"] = source.layerName
             # This is a "virtual" layer: all info will go to defaultGlyph.lib,
             # and no "true" layer will be written
             del layerGlyphs[source.layerName]
