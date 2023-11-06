@@ -55,11 +55,12 @@ class RCJKMySQLBackend:
         self._tempFontItemsCache.cancel()
 
     async def getGlyphMap(self):
-        if self._glyphMap is None:
-            self._glyphMap, self._rcjkGlyphInfo = await self._getGlyphMap()
+        await self._ensureGlyphMap()
         return dict(self._glyphMap)
 
-    async def _getGlyphMap(self):
+    async def _ensureGlyphMap(self):
+        if self._glyphMap is not None:
+            return
         rcjkGlyphInfo = {}
         glyphMap = {}
         response = await self.client.glif_list(self.fontUID)
@@ -67,7 +68,8 @@ class RCJKMySQLBackend:
             for glyphInfo in response["data"][typeName]:
                 glyphMap[glyphInfo["name"]] = _unicodesFromGlyphInfo(glyphInfo)
                 rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
-        return glyphMap, rcjkGlyphInfo
+        self._glyphMap = glyphMap
+        self._rcjkGlyphInfo = rcjkGlyphInfo
 
     async def _getMiscFontItems(self):
         if not hasattr(self, "_getMiscFontItemsTask"):
@@ -113,7 +115,8 @@ class RCJKMySQLBackend:
         return fontLib
 
     async def getGlyph(self, glyphName):
-        if self._glyphMap is not None and glyphName not in self._glyphMap:
+        await self._ensureGlyphMap()
+        if glyphName not in self._glyphMap:
             return None
         layerGlyphs = await self._getLayerGlyphs(glyphName)
         return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
@@ -152,6 +155,7 @@ class RCJKMySQLBackend:
             self._populateGlyphCache(subGlyphName, subGlyphData)
 
     async def putGlyph(self, glyphName, glyph, unicodes):
+        await self._ensureGlyphMap()
         logger.info(f"Start writing {glyphName}")
         self._writingChanges += 1
         try:
@@ -256,6 +260,7 @@ class RCJKMySQLBackend:
         self._glyphTimeStamps[glyphName] = getUpdatedTimeStamp(response["data"])
 
     async def deleteGlyph(self, glyphName):
+        await self._ensureGlyphMap()
         if glyphName not in self._rcjkGlyphInfo:
             raise KeyError(f"Glyph '{glyphName}' does not exist")
 
@@ -283,6 +288,7 @@ class RCJKMySQLBackend:
         return await method(self.fontUID, glyphID, *args, **kwargs)
 
     async def watchExternalChanges(self):
+        await self._ensureGlyphMap()
         errorDelay = 30
         while True:
             try:
