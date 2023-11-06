@@ -161,11 +161,11 @@ class AuthorizedClient:
         return path in self.projectMapping
 
     async def getProjectList(self):
-        await self._setupProjectList()
+        await self._setupProjectList(True)
         return sorted(self.projectMapping)
 
-    async def _setupProjectList(self):
-        if self.projectMapping is not None:
+    async def _setupProjectList(self, forceRebuild=False):
+        if not forceRebuild and self.projectMapping is not None:
             return
         projectMapping = await self.rcjkClient.get_project_font_uid_mapping()
         projectMapping = {f"{p}/{f}": uids for (p, f), uids in projectMapping.items()}
