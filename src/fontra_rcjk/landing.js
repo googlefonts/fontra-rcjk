@@ -1,5 +1,3 @@
-import { loaderSpinner } from "/core/loader-spinner.js";
-import { getRemoteProxy } from "/core/remote.js";
 import { parseCookies } from "/core/utils.js";
 import { startupLandingPage } from "/filesystem/landing.js";
 
