@@ -50,6 +50,8 @@ class RCJKProjectManager:
         formContent = parse_qs(await request.text())
         username = formContent["username"][0]
         password = formContent["password"][0]
+        remote = request.headers.get("X-FORWARDED-FOR", request.remote)
+        logger.info(f"login for {username} from {remote}")
         token = await self.login(username, password)
 
         destination = request.query.get("ref", "/")
