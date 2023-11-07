@@ -28,7 +28,7 @@ function rcjkAuthenticateFunc() {
   } else {
     const loginForm = document.querySelector("#login-form");
     const url = new URL(window.location);
-    loginForm.action = "/login" + url.search;
+    loginForm.action = "/login" + url.search + url.hash;
   }
   loginFailureMessage.classList.toggle("hidden", !loginFailed);
   return haveToken;
