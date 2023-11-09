@@ -16,15 +16,15 @@ MAX_CONCURRENT_CALLS = 140  # MySQL's default max connections is 151
 class ConcurrentCallLimiter:
     def __init__(self):
         self.num_calls_in_progress = 0
-        self.events = []
+        self.event_queue = []
 
     @asynccontextmanager
     async def limit(self):
         if self.num_calls_in_progress >= MAX_CONCURRENT_CALLS:
-            if not self.events:
+            if not self.event_queue:
                 logger.info("limiting concurrent API calls")
             event = asyncio.Event()
-            self.events.append(event)
+            self.event_queue.append(event)
             await event.wait()
 
         self.num_calls_in_progress += 1
@@ -32,10 +32,10 @@ class ConcurrentCallLimiter:
             yield
         finally:
             self.num_calls_in_progress -= 1
-            if self.num_calls_in_progress < MAX_CONCURRENT_CALLS and self.events:
-                event = self.events.pop(0)
+            if self.num_calls_in_progress < MAX_CONCURRENT_CALLS and self.event_queue:
+                event = self.event_queue.pop(0)
                 event.set()
-                if not self.events:
+                if not self.event_queue:
                     logger.info("done limiting concurrent API calls")
 
 
