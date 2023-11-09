@@ -56,6 +56,7 @@ class RCJKMySQLBackend:
 
     async def getGlyphMap(self):
         await self._ensureGlyphMap()
+        print(self._glyphMap)
         return dict(self._glyphMap)
 
     async def _ensureGlyphMap(self):
