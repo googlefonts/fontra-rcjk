@@ -14,7 +14,7 @@ from fontra.core.classes import (
     StaticGlyph,
     VariableGlyph,
 )
-from fontra.core.packedpath import PackedPathPointPen
+from fontra.core.path import PackedPathPointPen
 from fontTools.misc.transform import DecomposedTransform
 from fontTools.ufoLib.filenames import illegalCharacters
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
