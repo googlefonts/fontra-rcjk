@@ -180,7 +180,7 @@ class AuthorizedClient:
             backend = RCJKMySQLBackend.fromRCJKClient(self.rcjkClient, fontUID)
 
             async def closeFontHandler():
-                logger.info(f"closing FontHandler for '{path}'")
+                logger.info(f"closing FontHandler '{path}' for '{self.username}'")
                 del self.fontHandlers[path]
                 await fontHandler.close()
 
