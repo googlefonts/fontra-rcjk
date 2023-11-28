@@ -312,9 +312,14 @@ def _fudgeLayerNames(glyphName, layerGlyphs):
     # folder named "s2" will be written. If "S2" (cap S!) *also* exists, its
     # data will be happily written to the "s2" folder on a case-insensitive
     # file system. When reading back the project, we find "s2", but not "S2".
+    #
     # The code below tries to detect that situation and work around it. This
     # works as long as the layer names *within a single glyph* are not
     # ambiguous: "S1" and "s1" should not co-exist in the same glyph.
+    #
+    # The problem can also happen when checking out an .rcjk git project on a
+    # case-insensitive file system: "S2" and "s2" may both exist in the repo,
+    # but on a macOS/Windows checkout only one of them will be seen.
     #
     usedLayerNames = set()
     for varData in layerGlyphs["foreground"].lib.get("robocjk.variationGlyphs", []):
