@@ -130,6 +130,18 @@ class RCJKBackend:
             self._populateGlyphCache(compoName)
 
     def _fudgeLayerNames(self, glyphName, layerGlyphs):
+        #
+        # The rcjk format does not play well with case-insensitive file systems:
+        # layer names become folder names, and to read layer names we read folder
+        # names. Since layer names are global per font, case differences in layer
+        # names can cause ambiguities. For example, if a layer "s2" exists, a
+        # folder named "s2" will be written. If "S2" (cap S!) *also* exists, its
+        # data will be happily written to the "s2" folder on a case-insensitive
+        # file system. When reading back the project, we find "s2", but not "S2".
+        # The code below tries to detect that situation and work around it. This
+        # works as long as the layer names *within a single glyph* are not
+        # ambiguous: "S1" and "s1" should not co-exist in the same glyph.
+        #
         usedLayerNames = set()
         for varData in layerGlyphs["foreground"].lib.get("robocjk.variationGlyphs", []):
             layerName = varData.get("layerName")
