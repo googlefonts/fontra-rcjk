@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import pathlib
 
@@ -15,6 +16,8 @@ from .base import (
     standardFontLibItems,
     unpackAxes,
 )
+
+logger = logging.getLogger(__name__)
 
 glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
 
@@ -118,10 +121,47 @@ class RCJKBackend:
         layerGlyphs = {}
         for layerName, glifData in layerGLIFData:
             layerGlyphs[layerName] = GLIFGlyph.fromGLIFData(glifData)
+
+        layerGlyphs = self._fudgeLayerNames(glyphName, layerGlyphs)
+
         self._tempGlyphCache[glyphName] = layerGlyphs
 
         for compoName in layerGlyphs["foreground"].getComponentNames():
             self._populateGlyphCache(compoName)
+
+    def _fudgeLayerNames(self, glyphName, layerGlyphs):
+        usedLayerNames = set()
+        for varData in layerGlyphs["foreground"].lib.get("robocjk.variationGlyphs", []):
+            layerName = varData.get("layerName")
+            if layerName:
+                usedLayerNames.add(layerName)
+        missingLayerNames = usedLayerNames - set(layerGlyphs)
+
+        if not missingLayerNames:
+            return layerGlyphs
+
+        if len(usedLayerNames) != len(
+            {layerName.casefold() for layerName in usedLayerNames}
+        ):
+            logger.warn(
+                f"Possible layer name conflict on case-insensitive file system ({glyphName})"
+            )
+            return layerGlyphs
+
+        renameMap = {}
+        availableLayerNames = {
+            layerName.casefold(): layerName for layerName in layerGlyphs
+        }
+        for missingLayerName in missingLayerNames:
+            folded = missingLayerName.casefold()
+            fudged = availableLayerNames.get(folded)
+            if fudged:
+                renameMap[fudged] = missingLayerName
+        if renameMap:
+            logger.warn(f"fudging layer names for {glyphName}: {renameMap}")
+            layerGlyphs = {renameMap.get(k, k): v for k, v in layerGlyphs.items()}
+
+        return layerGlyphs
 
     def _getLayerGLIFData(self, glyphName):
         for gs, _ in self._iterGlyphSets():
