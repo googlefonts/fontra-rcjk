@@ -4,7 +4,6 @@ import shutil
 from dataclasses import asdict
 from importlib.metadata import entry_points
 
-import cattrs
 import pytest
 from fontra.core.classes import (
     GlobalAxis,
@@ -14,6 +13,7 @@ from fontra.core.classes import (
     Source,
     StaticGlyph,
     VariableGlyph,
+    structure,
 )
 
 from fontra_rcjk.base import makeSafeLayerName
@@ -396,7 +396,7 @@ async def test_getGlyphMap(backendName, numGlyphs, testMapping):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("backendName, expectedGlyph", getGlyphTestData)
 async def test_getGlyph(backendName, expectedGlyph):
-    expectedGlyph = cattrs.structure(expectedGlyph, VariableGlyph)
+    expectedGlyph = structure(expectedGlyph, VariableGlyph)
     font = getTestFont(backendName)
     with contextlib.closing(font):
         glyph = await font.getGlyph(expectedGlyph.name)
