@@ -229,7 +229,7 @@ def buildVariableComponentsFromLibComponents(deepComponents, dcNames):
             else f"ComponentNotFound#{index}"
         )
         name = deepCompoDict["name"] if "name" in deepCompoDict else impliedName
-        component = Component(name)
+        component = Component(name=name)
         if deepCompoDict["coord"]:
             component.location = dict(deepCompoDict["coord"])
         component.transformation = convertTransformation(deepCompoDict["transform"])
