@@ -13,7 +13,7 @@ from .base import (
     TimedCache,
     buildLayerGlyphsFromVariableGlyph,
     buildVariableGlyphFromLayerGlyphs,
-    standardFontLibItems,
+    standardCustomDataItems,
     unpackAxes,
 )
 
@@ -158,12 +158,12 @@ class RCJKBackend:
 
         del self._glyphMap[glyphName]
 
-    async def getFontLib(self):
-        fontLib = {}
+    async def getCustomData(self):
+        customData = {}
         libPath = self.path / "fontLib.json"
         if libPath.is_file():
-            fontLib = json.loads(libPath.read_text(encoding="utf-8"))
-        return fontLib | standardFontLibItems
+            customData = json.loads(libPath.read_text(encoding="utf-8"))
+        return customData | standardCustomDataItems
 
     async def watchExternalChanges(self):
         async for changes in watchfiles.awatch(self.path):

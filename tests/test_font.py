@@ -431,9 +431,9 @@ async def test_getGlobalAxes(backendName, expectedGlobalAxes):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("backendName, expectedLibLen", [("rcjk", 5)])
-async def test_getFontLib(backendName, expectedLibLen):
+async def test_getCustomData(backendName, expectedLibLen):
     font = getTestFont(backendName)
-    lib = await font.getFontLib()
+    lib = await font.getCustomData()
     assert expectedLibLen == len(lib)
 
 

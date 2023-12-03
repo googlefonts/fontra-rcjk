@@ -444,7 +444,7 @@ def makeSafeLayerName(layerName):
     return safeLayerName
 
 
-standardFontLibItems = {
+standardCustomDataItems = {
     "fontra.sourceStatusFieldDefinitions": [
         {
             "label": "In progress",

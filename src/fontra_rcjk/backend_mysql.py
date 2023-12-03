@@ -11,7 +11,7 @@ from .base import (
     TimedCache,
     buildLayerGlyphsFromVariableGlyph,
     buildVariableGlyphFromLayerGlyphs,
-    standardFontLibItems,
+    standardCustomDataItems,
     unpackAxes,
 )
 from .client import HTTPError
@@ -79,8 +79,8 @@ class RCJKMySQLBackend:
                 self._tempFontItemsCache["designspace"] = font_data["data"].get(
                     "designspace", {}
                 )
-                self._tempFontItemsCache["fontLib"] = (
-                    font_data["data"].get("fontlib", {}) | standardFontLibItems
+                self._tempFontItemsCache["customData"] = (
+                    font_data["data"].get("fontlib", {}) | standardCustomDataItems
                 )
                 self._tempFontItemsCache.updateTimeOut()
                 del self._getMiscFontItemsTask
@@ -107,12 +107,12 @@ class RCJKMySQLBackend:
     async def getUnitsPerEm(self):
         return 1000
 
-    async def getFontLib(self):
-        fontLib = self._tempFontItemsCache.get("fontLib")
-        if fontLib is None:
+    async def getCustomData(self):
+        customData = self._tempFontItemsCache.get("customData")
+        if customData is None:
             await self._getMiscFontItems()
-            fontLib = self._tempFontItemsCache["fontLib"]
-        return fontLib
+            customData = self._tempFontItemsCache["customData"]
+        return customData
 
     async def getGlyph(self, glyphName):
         await self._ensureGlyphMap()
