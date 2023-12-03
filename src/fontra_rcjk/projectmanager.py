@@ -1,4 +1,5 @@
 import logging
+import pathlib
 import secrets
 from importlib import resources
 from urllib.parse import parse_qs, quote
@@ -18,19 +19,25 @@ class RCJKProjectManagerFactory:
     def addArguments(parser):
         parser.add_argument("rcjk_host")
         parser.add_argument("--read-only", action="store_true")
+        parser.add_argument("--cache-dir")
 
     @staticmethod
     def getProjectManager(arguments):
         return RCJKProjectManager(
             host=arguments.rcjk_host,
             readOnly=arguments.read_only,
+            cacheDir=arguments.cache_dir,
         )
 
 
 class RCJKProjectManager:
-    def __init__(self, host, *, readOnly=False):
+    def __init__(self, host, *, readOnly=False, cacheDir=None):
         self.host = host
         self.readOnly = readOnly
+        if cacheDir is not None:
+            cacheDir = pathlib.Path(cacheDir).resolve()
+            cacheDir.mkdir(exist_ok=True)
+        self.cacheDir = cacheDir
         self.authorizedClients = {}
 
     async def close(self):
@@ -116,7 +123,7 @@ class RCJKProjectManager:
         logger.info(f"successfully logged in '{username}'")
         token = secrets.token_hex(32)
         self.authorizedClients[token] = AuthorizedClient(
-            rcjkClient, readOnly=self.readOnly
+            rcjkClient, readOnly=self.readOnly, cacheDir=self.cacheDir
         )
         return token
 
@@ -143,9 +150,10 @@ class RCJKProjectManager:
 
 
 class AuthorizedClient:
-    def __init__(self, rcjkClient, readOnly=False):
+    def __init__(self, rcjkClient, readOnly=False, cacheDir=None):
         self.rcjkClient = rcjkClient
         self.readOnly = readOnly
+        self.cacheDir = cacheDir
         self.projectMapping = None
         self.fontHandlers = {}
 
@@ -177,7 +185,9 @@ class AuthorizedClient:
         fontHandler = self.fontHandlers.get(path)
         if fontHandler is None:
             _, fontUID = self.projectMapping[path]
-            backend = RCJKMySQLBackend.fromRCJKClient(self.rcjkClient, fontUID)
+            backend = RCJKMySQLBackend.fromRCJKClient(
+                self.rcjkClient, fontUID, self.cacheDir
+            )
 
             async def closeFontHandler():
                 logger.info(f"closing FontHandler '{path}' for '{self.username}'")
