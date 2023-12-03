@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from random import random
 
 from fontra.backends.designspace import makeGlyphMapChange
+from fontra.core.instancer import mapLocationFromUserToSource
 
 from .base import (
     GLIFGlyph,
@@ -95,7 +96,8 @@ class RCJKMySQLBackend:
             designspace = self._tempFontItemsCache["designspace"]
             axes = unpackAxes(designspace.get("axes", ()))
             self._tempFontItemsCache["axes"] = axes
-            self._defaultLocation = {axis.name: axis.defaultValue for axis in axes}
+            userLoc = {axis.name: axis.defaultValue for axis in axes}
+            self._defaultLocation = mapLocationFromUserToSource(userLoc, axes)
         return axes
 
     async def getDefaultLocation(self):
