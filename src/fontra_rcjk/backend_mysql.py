@@ -1,10 +1,13 @@
 import asyncio
 import logging
 import traceback
+from copy import deepcopy
 from datetime import datetime, timedelta
 from random import random
 
 from fontra.backends.designspace import makeGlyphMapChange
+from fontra.core.classes import unstructure
+from fontra.core.instancer import mapLocationFromUserToSource
 
 from .base import (
     GLIFGlyph,
@@ -95,8 +98,15 @@ class RCJKMySQLBackend:
             designspace = self._tempFontItemsCache["designspace"]
             axes = unpackAxes(designspace.get("axes", ()))
             self._tempFontItemsCache["axes"] = axes
-            self._defaultLocation = {axis.name: axis.defaultValue for axis in axes}
+            userLoc = {axis.name: axis.defaultValue for axis in axes}
+            self._defaultLocation = mapLocationFromUserToSource(userLoc, axes)
         return axes
+
+    async def putGlobalAxes(self, axes):
+        await self._getMiscFontItems()
+        designspace = self._tempFontItemsCache["designspace"]
+        designspace["axes"] = unstructure(axes)
+        _ = await self.client.font_update(self.fontUID, designspace=designspace)
 
     async def getDefaultLocation(self):
         if self._defaultLocation is None:
@@ -113,6 +123,11 @@ class RCJKMySQLBackend:
             await self._getMiscFontItems()
             customData = self._tempFontItemsCache["customData"]
         return customData
+
+    async def putCustomData(self, customData):
+        await self._getMiscFontItems()
+        self._tempFontItemsCache["customData"] = deepcopy(customData)
+        _ = await self.client.font_update(self.fontUID, fontlib=customData)
 
     async def getGlyph(self, glyphName):
         await self._ensureGlyphMap()

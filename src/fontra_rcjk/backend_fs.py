@@ -2,10 +2,14 @@ import json
 import logging
 import os
 import pathlib
+import shutil
+from functools import cached_property
 
 import watchfiles
 from fontra.backends.designspace import cleanupWatchFilesChanges
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
+from fontra.core.classes import unstructure
+from fontra.core.instancer import mapLocationFromUserToSource
 from fontTools.ufoLib.filenames import userNameToFileName
 
 from .base import (
@@ -23,6 +27,8 @@ glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
 
 
 FILE_DELETED_TOKEN = object()
+DS_FILENAME = "designspace.json"
+FONTLIB_FILENAME = "fontLib.json"
 
 
 class RCJKBackend:
@@ -30,8 +36,23 @@ class RCJKBackend:
     def fromPath(cls, path):
         return cls(path)
 
-    def __init__(self, path):
+    @classmethod
+    def createFromPath(cls, path):
+        return cls(path, create=True)
+
+    def __init__(self, path, *, create=False):
         self.path = pathlib.Path(path).resolve()
+        if create:
+            if self.path.is_dir():
+                shutil.rmtree(self.path)
+            elif self.path.exists():
+                self.path.unlink()
+            cgPath = self.path / "characterGlyph"
+            cgPath.mkdir(exist_ok=True, parents=True)
+            self.characterGlyphGlyphSet = (
+                RCJKGlyphSet(cgPath, self.registerWrittenPath),
+            )
+
         for name in glyphSetNames:
             setattr(
                 self,
@@ -42,16 +63,11 @@ class RCJKBackend:
         if not self.characterGlyphGlyphSet.exists():
             raise TypeError(f"Not a valid rcjk project: '{path}'")
 
-        designspacePath = self.path / "designspace.json"
+        designspacePath = self.path / DS_FILENAME
         if designspacePath.is_file():
-            self.designspace = json.loads(designspacePath.read_bytes())
-            self._defaultLocation = {
-                axis["tag"]: axis["defaultValue"]
-                for axis in self.designspace.get("axes", ())
-            }
+            self.designspace = json.loads(designspacePath.read_text(encoding="utf-8"))
         else:
             self.designspace = {}
-            self._defaultLocation = {}
 
         self._glyphMap = {}
         for gs, hasEncoding in self._iterGlyphSets():
@@ -86,15 +102,32 @@ class RCJKBackend:
             # Default for new glyphs, too
             return self.characterGlyphGlyphSet
 
+    @cached_property
+    def _defaultLocation(self):
+        axes = unpackAxes(self.designspace.get("axes", ()))
+        userLoc = {
+            axis["name"]: axis["defaultValue"]
+            for axis in self.designspace.get("axes", ())
+        }
+        return mapLocationFromUserToSource(userLoc, axes)
+
     async def getGlyphMap(self):
         return dict(self._glyphMap)
 
     async def getGlobalAxes(self):
-        axes = getattr(self, "_globalAxes", None)
-        if axes is None:
-            axes = unpackAxes(self.designspace.get("axes", ()))
-            self._globalAxes = axes
-        return axes
+        return unpackAxes(self.designspace.get("axes", ()))
+
+    async def putGlobalAxes(self, axes):
+        self.designspace["axes"] = unstructure(axes)
+        if hasattr(self, "_defaultLocation"):
+            del self._defaultLocation
+        self._writeDesignSpaceFile()
+
+    def _writeDesignSpaceFile(self):
+        designspacePath = self.path / DS_FILENAME
+        designspacePath.write_text(
+            json.dumps(self.designspace, indent=2), encoding="utf-8"
+        )
 
     async def getUnitsPerEm(self):
         return 1000
@@ -140,8 +173,11 @@ class RCJKBackend:
             existingLayerGlyphs = {}
         else:
             existingLayerGlyphs = self._getLayerGlyphs(glyphName)
+        localDefaultLocation = self._defaultLocation | {
+            axis.name: axis.defaultValue for axis in glyph.axes
+        }
         layerGlyphs = buildLayerGlyphsFromVariableGlyph(
-            glyphName, glyph, unicodes, self._defaultLocation, existingLayerGlyphs
+            glyphName, glyph, unicodes, localDefaultLocation, existingLayerGlyphs
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
@@ -160,10 +196,19 @@ class RCJKBackend:
 
     async def getCustomData(self):
         customData = {}
-        libPath = self.path / "fontLib.json"
-        if libPath.is_file():
-            customData = json.loads(libPath.read_text(encoding="utf-8"))
+        customDataPath = self.path / FONTLIB_FILENAME
+        if customDataPath.is_file():
+            customData = json.loads(customDataPath.read_text(encoding="utf-8"))
         return customData | standardCustomDataItems
+
+    async def putCustomData(self, customData):
+        customDataPath = self.path / FONTLIB_FILENAME
+        customData = {
+            k: v
+            for k, v in customData.items()
+            if k not in standardCustomDataItems or standardCustomDataItems[k] != v
+        }
+        customDataPath.write_text(json.dumps(customData, indent=2), encoding="utf-8")
 
     async def watchExternalChanges(self):
         async for changes in watchfiles.awatch(self.path):

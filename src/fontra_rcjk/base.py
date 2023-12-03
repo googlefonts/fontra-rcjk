@@ -3,16 +3,19 @@ import hashlib
 from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
+from typing import Union
 
 from fontra.backends.designspace import cleanupTransform
 from fontra.core.classes import (
     Component,
     GlobalAxis,
+    GlobalDiscreteAxis,
     Layer,
     LocalAxis,
     Source,
     StaticGlyph,
     VariableGlyph,
+    structure,
 )
 from fontra.core.path import PackedPathPointPen
 from fontTools.misc.transform import DecomposedTransform
@@ -275,6 +278,11 @@ def buildLayerGlyphsFromVariableGlyph(
         else:
             layerGlyph = layerGlyph.copy()
         layerGlyph.updateFromStaticGlyph(glyphName, layer.glyph)
+
+        safeLayerName = makeSafeLayerName(layerName)
+        if safeLayerName != layerName:
+            fontraLayerNameMapping[safeLayerName] = layerName
+
         layerGlyphs[layerName] = layerGlyph
         layerGlyphs[layerName].unicodes = unicodes
     defaultGlyph = layerGlyphs["foreground"]
@@ -477,14 +485,18 @@ standardCustomDataItems = {
 
 
 def unpackAxes(dsAxes):
-    return [
-        GlobalAxis(
-            label=axis["name"],
-            name=axis["tag"],
-            tag=axis["tag"],
-            minValue=axis["minValue"],
-            defaultValue=axis["defaultValue"],
-            maxValue=axis["maxValue"],
-        )
-        for axis in dsAxes
-    ]
+    return [_unpackDSAxis(axis) for axis in dsAxes]
+
+
+def _unpackDSAxis(dsAxis):
+    if "label" in dsAxis:
+        return structure(dsAxis, Union[GlobalAxis, GlobalDiscreteAxis])
+    # Legacy rcjk ds data
+    return GlobalAxis(
+        label=dsAxis["name"],
+        name=dsAxis["tag"],
+        tag=dsAxis["tag"],
+        minValue=dsAxis["minValue"],
+        defaultValue=dsAxis["defaultValue"],
+        maxValue=dsAxis["maxValue"],
+    )
