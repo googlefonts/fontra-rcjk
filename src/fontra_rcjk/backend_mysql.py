@@ -69,7 +69,6 @@ class RCJKMySQLBackend:
         response = await self.client.glif_list(self.fontUID)
         for typeCode, typeName in _glyphTypes:
             for glyphInfo in response["data"][typeName]:
-                print(glyphInfo)
                 glyphMap[glyphInfo["name"]] = _unicodesFromGlyphInfo(glyphInfo)
                 rcjkGlyphInfo[glyphInfo["name"]] = (typeCode, glyphInfo["id"])
         self._glyphMap = glyphMap
