@@ -477,14 +477,24 @@ standardCustomDataItems = {
 
 
 def unpackAxes(dsAxes):
-    return [
-        GlobalAxis(
-            label=axis["name"],
-            name=axis["tag"],
+    axes = []
+    for axis in dsAxes:
+        kwargs = dict(
             tag=axis["tag"],
             minValue=axis["minValue"],
             defaultValue=axis["defaultValue"],
             maxValue=axis["maxValue"],
         )
-        for axis in dsAxes
-    ]
+        if "label" in dsAxes:
+            kwargs.update(
+                label=axis["label"],
+                name=axis["name"],
+            )
+        else:
+            # Legacy rcjk ds data
+            kwargs.update(
+                label=axis["name"],
+                name=axis["tag"],
+            )
+        axes.append(GlobalAxis(**kwargs))
+    return axes
