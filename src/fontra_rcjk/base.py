@@ -278,6 +278,11 @@ def buildLayerGlyphsFromVariableGlyph(
         else:
             layerGlyph = layerGlyph.copy()
         layerGlyph.updateFromStaticGlyph(glyphName, layer.glyph)
+
+        safeLayerName = makeSafeLayerName(layerName)
+        if safeLayerName != layerName:
+            fontraLayerNameMapping[safeLayerName] = layerName
+
         layerGlyphs[layerName] = layerGlyph
         layerGlyphs[layerName].unicodes = unicodes
     defaultGlyph = layerGlyphs["foreground"]
