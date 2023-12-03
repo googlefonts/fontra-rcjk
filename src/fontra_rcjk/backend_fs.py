@@ -9,6 +9,7 @@ import watchfiles
 from fontra.backends.designspace import cleanupWatchFilesChanges
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
 from fontra.core.classes import unstructure
+from fontra.core.instancer import mapLocationFromUserToSource
 from fontTools.ufoLib.filenames import userNameToFileName
 
 from .base import (
@@ -103,10 +104,12 @@ class RCJKBackend:
 
     @cached_property
     def _defaultLocation(self):
-        return {
+        axes = unpackAxes(self.designspace.get("axes", ()))
+        userLoc = {
             axis["name"]: axis["defaultValue"]
             for axis in self.designspace.get("axes", ())
         }
+        return mapLocationFromUserToSource(userLoc, axes)
 
     async def getGlyphMap(self):
         return dict(self._glyphMap)
@@ -170,8 +173,11 @@ class RCJKBackend:
             existingLayerGlyphs = {}
         else:
             existingLayerGlyphs = self._getLayerGlyphs(glyphName)
+        localDefaultLocation = self._defaultLocation | {
+            axis.name: axis.defaultValue for axis in glyph.axes
+        }
         layerGlyphs = buildLayerGlyphsFromVariableGlyph(
-            glyphName, glyph, unicodes, self._defaultLocation, existingLayerGlyphs
+            glyphName, glyph, unicodes, localDefaultLocation, existingLayerGlyphs
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
