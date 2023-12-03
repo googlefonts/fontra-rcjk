@@ -126,7 +126,7 @@ class RCJKMySQLBackend:
 
     async def putCustomData(self, customData):
         await self._getMiscFontItems()
-        self._tempFontItemsCache["designspace"] = deepcopy(customData)
+        self._tempFontItemsCache["customData"] = deepcopy(customData)
         _ = await self.client.font_update(self.fontUID, fontlib=customData)
 
     async def getGlyph(self, glyphName):
