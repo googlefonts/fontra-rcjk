@@ -53,7 +53,6 @@ class RCJKMySQLBackend:
         self.fontUID = fontUID
         if cacheDir is not None:
             cacheDir = cacheDir / fontUID
-            cacheDir.mkdir(exist_ok=True, parents=True)
         self.cacheDir = cacheDir
         self.pollExternalChangesInterval = 10
         self._rcjkGlyphInfo = None
@@ -166,6 +165,7 @@ class RCJKMySQLBackend:
         fileName = f"{glyphInfo.glyphID}-{glyphInfo.updated}.json"
         path = self.cacheDir / fileName
         try:
+            self.cacheDir.mkdir(exist_ok=True, parents=True)
             path.write_text(
                 json.dumps(unstructure(glyph), separators=(",", ":")), encoding="utf-8"
             )
