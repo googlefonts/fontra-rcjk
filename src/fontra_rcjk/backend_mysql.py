@@ -153,7 +153,13 @@ class RCJKMySQLBackend:
         path = self.cacheDir / fileName
         if not path.exists():
             return None
-        return structure(json.loads(path.read_text(encoding="utf-8")), VariableGlyph)
+        try:
+            return structure(
+                json.loads(path.read_text(encoding="utf-8")), VariableGlyph
+            )
+        except Exception as e:
+            logger.error("error readong from local cache: %r", e)
+            return None
 
     def _writeGlyphToCacheDir(self, glyphName, glyph):
         if self.cacheDir is None:
