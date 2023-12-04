@@ -178,6 +178,14 @@ class RCJKMySQLBackend:
         except Exception as e:
             logger.error("error writing to local cache: %r", e)
 
+    def _deleteGlyphFromCacheDir(self, glyphName):
+        glyphInfo = self._rcjkGlyphInfo.get(glyphName)
+        if glyphInfo is None:
+            return
+        globPattern = f"{glyphInfo.glyphID}-*.json"
+        for stalePath in self.cacheDir.glob(globPattern):
+            stalePath.unlink()
+
     async def getGlyph(self, glyphName):
         await self._ensureGlyphMap()
         if glyphName not in self._glyphMap:
@@ -345,6 +353,7 @@ class RCJKMySQLBackend:
 
         # We set the time stamp to None so we can later distinguish "we deleted this
         # glyph" from "this glyph was externally deleted"
+        self._deleteGlyphFromCacheDir(glyphName)
         self._glyphTimeStamps[glyphName] = None
         del self._rcjkGlyphInfo[glyphName]
         del self._glyphMap[glyphName]
