@@ -183,7 +183,7 @@ class RCJKMySQLBackend:
                 json.dumps(unstructure(glyph), separators=(",", ":")), encoding="utf-8"
             )
         except Exception as e:
-            logger.error("error writing to local cache: %r", e)
+            logger.exception(f"error writing {glyphName!r} to local cache: {e!r}")
 
     def _deleteGlyphFromCacheDir(self, glyphName):
         glyphInfo = self._rcjkGlyphInfo.get(glyphName)
