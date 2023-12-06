@@ -63,6 +63,7 @@ class RCJKMySQLBackend:
         self._glyphTimeStamps = {}
         self._pollNowEvent = asyncio.Event()
         self._glyphMap = None
+        self._glyphMapTask = None
         self._defaultLocation = None
         return self
 
@@ -73,7 +74,13 @@ class RCJKMySQLBackend:
         await self._ensureGlyphMap()
         return dict(self._glyphMap)
 
-    async def _ensureGlyphMap(self):
+    def _ensureGlyphMap(self):
+        # Prevent multiple concurrent queries by using a single task
+        if self._glyphMapTask is None:
+            self._glyphMapTask = asyncio.create_task(self._ensureGlyphMapTask())
+        return self._glyphMapTask
+
+    async def _ensureGlyphMapTask(self):
         if self._glyphMap is not None:
             return
         rcjkGlyphInfo = {}
