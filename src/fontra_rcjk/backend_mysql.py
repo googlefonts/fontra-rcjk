@@ -165,7 +165,7 @@ class RCJKMySQLBackend:
                 json.loads(path.read_text(encoding="utf-8")), VariableGlyph
             )
         except Exception as e:
-            logger.error("error readong from local cache: %r", e)
+            logger.exception(f"error reading {glyphName!r} from local cache: {e!r}")
             return None
 
     def _writeGlyphToCacheDir(self, glyphName, glyph):
