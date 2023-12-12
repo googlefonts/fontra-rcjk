@@ -10,7 +10,12 @@ from typing import Any
 import watchfiles
 from fontra.backends.designspace import cleanupWatchFilesChanges
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
-from fontra.core.classes import VariableGlyph, unstructure
+from fontra.core.classes import (
+    GlobalAxis,
+    GlobalDiscreteAxis,
+    VariableGlyph,
+    unstructure,
+)
 from fontra.core.instancer import mapLocationFromUserToSource
 from fontra.core.protocols import WritableFontBackend
 from fontTools.ufoLib.filenames import userNameToFileName
@@ -112,16 +117,16 @@ class RCJKBackend:
         }
         return mapLocationFromUserToSource(userLoc, axes)
 
-    async def getGlyphMap(self):
+    async def getGlyphMap(self) -> dict[str, list[int]]:
         return dict(self._glyphMap)
 
     async def putGlyphMap(self, glyphMap: dict[str, list[int]]) -> None:
         pass
 
-    async def getGlobalAxes(self):
+    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
         return unpackAxes(self.designspace.get("axes", ()))
 
-    async def putGlobalAxes(self, axes):
+    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
         self.designspace["axes"] = unstructure(axes)
         if hasattr(self, "_defaultLocation"):
             del self._defaultLocation
@@ -133,10 +138,10 @@ class RCJKBackend:
             json.dumps(self.designspace, indent=2), encoding="utf-8"
         )
 
-    async def getUnitsPerEm(self):
+    async def getUnitsPerEm(self) -> int:
         return 1000
 
-    async def putUnitsPerEm(self, value):
+    async def putUnitsPerEm(self, value: int) -> None:
         pass
 
     async def getGlyph(self, glyphName: str) -> VariableGlyph | None:
@@ -203,14 +208,14 @@ class RCJKBackend:
 
         del self._glyphMap[glyphName]
 
-    async def getCustomData(self):
+    async def getCustomData(self) -> dict[str, Any]:
         customData = {}
         customDataPath = self.path / FONTLIB_FILENAME
         if customDataPath.is_file():
             customData = json.loads(customDataPath.read_text(encoding="utf-8"))
         return customData | standardCustomDataItems
 
-    async def putCustomData(self, customData):
+    async def putCustomData(self, customData: dict[str, Any]) -> None:
         customDataPath = self.path / FONTLIB_FILENAME
         customData = {
             k: v
