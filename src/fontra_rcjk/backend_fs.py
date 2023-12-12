@@ -4,12 +4,15 @@ import os
 import pathlib
 import shutil
 from functools import cached_property
+from os import PathLike
+from typing import Any
 
 import watchfiles
 from fontra.backends.designspace import cleanupWatchFilesChanges
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
-from fontra.core.classes import unstructure
+from fontra.core.classes import VariableGlyph, unstructure
 from fontra.core.instancer import mapLocationFromUserToSource
+from fontra.core.protocols import WritableFontBackend
 from fontTools.ufoLib.filenames import userNameToFileName
 
 from .base import (
@@ -33,14 +36,14 @@ FONTLIB_FILENAME = "fontLib.json"
 
 class RCJKBackend:
     @classmethod
-    def fromPath(cls, path):
+    def fromPath(cls, path: PathLike) -> WritableFontBackend:
         return cls(path)
 
     @classmethod
-    def createFromPath(cls, path):
+    def createFromPath(cls, path: PathLike) -> WritableFontBackend:
         return cls(path, create=True)
 
-    def __init__(self, path, *, create=False):
+    def __init__(self, path: PathLike, *, create: bool = False):
         self.path = pathlib.Path(path).resolve()
         if create:
             if self.path.is_dir():
@@ -49,9 +52,7 @@ class RCJKBackend:
                 self.path.unlink()
             cgPath = self.path / "characterGlyph"
             cgPath.mkdir(exist_ok=True, parents=True)
-            self.characterGlyphGlyphSet = (
-                RCJKGlyphSet(cgPath, self.registerWrittenPath),
-            )
+            self.characterGlyphGlyphSet = RCJKGlyphSet(cgPath, self.registerWrittenPath)
 
         for name in glyphSetNames:
             setattr(
@@ -69,7 +70,7 @@ class RCJKBackend:
         else:
             self.designspace = {}
 
-        self._glyphMap = {}
+        self._glyphMap: dict[str, list[int]] = {}
         for gs, hasEncoding in self._iterGlyphSets():
             glyphMap = gs.getGlyphMap(not hasEncoding)
             for glyphName, unicodes in glyphMap.items():
@@ -78,7 +79,7 @@ class RCJKBackend:
                     assert not unicodes
                 self._glyphMap[glyphName] = unicodes
 
-        self._recentlyWrittenPaths = {}
+        self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
 
     def close(self):
@@ -114,6 +115,9 @@ class RCJKBackend:
     async def getGlyphMap(self):
         return dict(self._glyphMap)
 
+    async def putGlyphMap(self, glyphMap: dict[str, list[int]]) -> None:
+        pass
+
     async def getGlobalAxes(self):
         return unpackAxes(self.designspace.get("axes", ()))
 
@@ -132,7 +136,10 @@ class RCJKBackend:
     async def getUnitsPerEm(self):
         return 1000
 
-    async def getGlyph(self, glyphName):
+    async def putUnitsPerEm(self, value):
+        pass
+
+    async def getGlyph(self, glyphName: str) -> VariableGlyph | None:
         layerGlyphs = self._getLayerGlyphs(glyphName)
         return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
 
@@ -168,7 +175,9 @@ class RCJKBackend:
                 return gs.getGlyphLayerData(glyphName)
         return None
 
-    async def putGlyph(self, glyphName, glyph, unicodes):
+    async def putGlyph(
+        self, glyphName: str, glyph: VariableGlyph, unicodes: list[int]
+    ) -> None:
         if glyphName not in self._glyphMap:
             existingLayerGlyphs = {}
         else:
