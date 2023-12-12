@@ -14,6 +14,7 @@ from fontra.core.classes import (
     StaticGlyph,
     VariableGlyph,
     structure,
+    unstructure,
 )
 
 from fontra_rcjk.base import makeSafeLayerName
@@ -871,60 +872,28 @@ async def test_delete_items(writableTestFont):
 
 expectedReadMixedComponentTestData = {
     "name": "b",
-    "axes": [],
     "sources": [
         {
             "name": "<default>",
             "layerName": "foreground",
-            "location": {},
-            "inactive": False,
             "customData": {"fontra.development.status": 0},
         }
     ],
     "layers": {
         "foreground": {
             "glyph": {
-                "path": {"coordinates": [], "pointTypes": [], "contourInfo": []},
                 "components": [
-                    {
-                        "name": "a",
-                        "transformation": {
-                            "translateX": 0,
-                            "translateY": 0,
-                            "rotation": 0.0,
-                            "scaleX": 1.0,
-                            "scaleY": 1.0,
-                            "skewX": 0.0,
-                            "skewY": 0.0,
-                            "tCenterX": 0,
-                            "tCenterY": 0,
-                        },
-                        "location": {},
-                    },
+                    {"name": "a"},
                     {
                         "name": "DC_0033_00",
-                        "transformation": {
-                            "translateX": 30,
-                            "translateY": 0,
-                            "rotation": 0,
-                            "scaleX": 1,
-                            "scaleY": 1,
-                            "skewX": 0,
-                            "skewY": 0,
-                            "tCenterX": 0,
-                            "tCenterY": 0,
-                        },
+                        "transformation": {"translateX": 30},
                         "location": {"X_X_bo": 0, "X_X_la": 0},
                     },
                 ],
                 "xAdvance": 500,
-                "yAdvance": None,
-                "verticalOrigin": None,
             },
-            "customData": {},
         }
     },
-    "customData": {},
 }
 
 
@@ -932,7 +901,7 @@ async def test_readMixClassicAndVariableComponents():
     font = getTestFont("rcjk")
     with contextlib.closing(font):
         glyph = await font.getGlyph("b")
-        assert expectedReadMixedComponentTestData == asdict(glyph)
+        assert expectedReadMixedComponentTestData == unstructure(glyph)
 
 
 expectedWriteMixedComponentTestData = [
