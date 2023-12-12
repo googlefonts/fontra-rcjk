@@ -1,11 +1,14 @@
+import argparse
 import logging
 import pathlib
 import secrets
 from importlib import resources
+from types import SimpleNamespace
 from urllib.parse import parse_qs, quote
 
 from aiohttp import web
 from fontra.core.fonthandler import FontHandler
+from fontra.core.protocols import ProjectManager
 
 from .backend_mysql import RCJKMySQLBackend
 from .client import HTTPError
@@ -16,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 class RCJKProjectManagerFactory:
     @staticmethod
-    def addArguments(parser):
+    def addArguments(parser: argparse.ArgumentParser) -> None:
         parser.add_argument("rcjk_host")
         parser.add_argument("--read-only", action="store_true")
         parser.add_argument("--cache-dir")
 
     @staticmethod
-    def getProjectManager(arguments):
+    def getProjectManager(arguments: SimpleNamespace) -> ProjectManager:
         return RCJKProjectManager(
             host=arguments.rcjk_host,
             readOnly=arguments.read_only,
