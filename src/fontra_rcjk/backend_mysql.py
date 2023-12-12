@@ -10,6 +10,7 @@ from random import random
 from fontra.backends.designspace import makeGlyphMapChange
 from fontra.core.classes import VariableGlyph, structure, unstructure
 from fontra.core.instancer import mapLocationFromUserToSource
+from fontra.core.protocols import WritableFontBackend
 
 from .base import (
     GLIFGlyph,
@@ -47,8 +48,10 @@ class RCJKGlyphInfo:
 
 class RCJKMySQLBackend:
     @classmethod
-    def fromRCJKClient(cls, client, fontUID, cacheDir=None):
-        self = cls()
+    def fromRCJKClient(cls, client, fontUID, cacheDir=None) -> WritableFontBackend:
+        return cls(client, fontUID, cacheDir)
+
+    def __init__(self, client, fontUID, cacheDir=None):
         self.client = client
         self.fontUID = fontUID
         if cacheDir is not None:
@@ -65,7 +68,6 @@ class RCJKMySQLBackend:
         self._glyphMap = None
         self._glyphMapTask = None
         self._defaultLocation = None
-        return self
 
     def close(self):
         self._tempFontItemsCache.cancel()
@@ -73,6 +75,9 @@ class RCJKMySQLBackend:
     async def getGlyphMap(self):
         await self._ensureGlyphMap()
         return dict(self._glyphMap)
+
+    async def putGlyphMap(self, glyphMap):
+        pass
 
     def _ensureGlyphMap(self):
         # Prevent multiple concurrent queries by using a single task
@@ -139,6 +144,9 @@ class RCJKMySQLBackend:
 
     async def getUnitsPerEm(self):
         return 1000
+
+    async def putUnitsPerEm(self, value):
+        pass
 
     async def getCustomData(self):
         customData = self._tempFontItemsCache.get("customData")
