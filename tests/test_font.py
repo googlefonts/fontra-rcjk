@@ -1,7 +1,6 @@
 import contextlib
 import pathlib
 import shutil
-from dataclasses import asdict
 from importlib.metadata import entry_points
 
 import pytest
@@ -401,7 +400,7 @@ async def test_getGlyph(backendName, expectedGlyph):
     font = getTestFont(backendName)
     with contextlib.closing(font):
         glyph = await font.getGlyph(expectedGlyph.name)
-        assert asdict(glyph) == asdict(expectedGlyph)
+        assert unstructure(glyph) == unstructure(expectedGlyph)
         assert glyph == expectedGlyph
 
 
