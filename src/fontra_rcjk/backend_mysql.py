@@ -6,9 +6,16 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from random import random
+from typing import Any
 
 from fontra.backends.designspace import makeGlyphMapChange
-from fontra.core.classes import VariableGlyph, structure, unstructure
+from fontra.core.classes import (
+    GlobalAxis,
+    GlobalDiscreteAxis,
+    VariableGlyph,
+    structure,
+    unstructure,
+)
 from fontra.core.instancer import mapLocationFromUserToSource
 from fontra.core.protocols import WritableFontBackend
 
@@ -72,20 +79,20 @@ class RCJKMySQLBackend:
     def close(self):
         self._tempFontItemsCache.cancel()
 
-    async def getGlyphMap(self):
+    async def getGlyphMap(self) -> dict[str, list[int]]:
         await self._ensureGlyphMap()
         return dict(self._glyphMap)
 
-    async def putGlyphMap(self, glyphMap):
+    async def putGlyphMap(self, value: dict[str, list[int]]) -> None:
         pass
 
-    def _ensureGlyphMap(self):
+    def _ensureGlyphMap(self) -> asyncio.Task:
         # Prevent multiple concurrent queries by using a single task
         if self._glyphMapTask is None:
             self._glyphMapTask = asyncio.create_task(self._ensureGlyphMapTask())
         return self._glyphMapTask
 
-    async def _ensureGlyphMapTask(self):
+    async def _ensureGlyphMapTask(self) -> None:
         if self._glyphMap is not None:
             return
         rcjkGlyphInfo = {}
@@ -102,7 +109,7 @@ class RCJKMySQLBackend:
         self._glyphMap = glyphMap
         self._rcjkGlyphInfo = rcjkGlyphInfo
 
-    async def _getMiscFontItems(self):
+    async def _getMiscFontItems(self) -> None:
         if not hasattr(self, "_getMiscFontItemsTask"):
 
             async def taskFunc():
@@ -119,7 +126,7 @@ class RCJKMySQLBackend:
             self._getMiscFontItemsTask = asyncio.create_task(taskFunc())
         await self._getMiscFontItemsTask
 
-    async def getGlobalAxes(self):
+    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
         axes = self._tempFontItemsCache.get("axes")
         if axes is None:
             await self._getMiscFontItems()
@@ -130,37 +137,37 @@ class RCJKMySQLBackend:
             self._defaultLocation = mapLocationFromUserToSource(userLoc, axes)
         return axes
 
-    async def putGlobalAxes(self, axes):
+    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
         await self._getMiscFontItems()
         designspace = self._tempFontItemsCache["designspace"]
         designspace["axes"] = unstructure(axes)
         _ = await self.client.font_update(self.fontUID, designspace=designspace)
 
-    async def getDefaultLocation(self):
+    async def getDefaultLocation(self) -> dict[str, float]:
         if self._defaultLocation is None:
             _ = await self.getGlobalAxes()
         assert self._defaultLocation is not None
         return self._defaultLocation
 
-    async def getUnitsPerEm(self):
+    async def getUnitsPerEm(self) -> int:
         return 1000
 
-    async def putUnitsPerEm(self, value):
+    async def putUnitsPerEm(self, value: int) -> None:
         pass
 
-    async def getCustomData(self):
+    async def getCustomData(self) -> dict[str, Any]:
         customData = self._tempFontItemsCache.get("customData")
         if customData is None:
             await self._getMiscFontItems()
             customData = self._tempFontItemsCache["customData"]
         return customData
 
-    async def putCustomData(self, customData):
+    async def putCustomData(self, customData: dict[str, Any]) -> None:
         await self._getMiscFontItems()
         self._tempFontItemsCache["customData"] = deepcopy(customData)
         _ = await self.client.font_update(self.fontUID, fontlib=customData)
 
-    def _readGlyphFromCacheDir(self, glyphName):
+    def _readGlyphFromCacheDir(self, glyphName: str) -> VariableGlyph | None:
         if self.cacheDir is None:
             return None
         glyphInfo = self._rcjkGlyphInfo[glyphName]
@@ -176,7 +183,7 @@ class RCJKMySQLBackend:
             logger.exception(f"error reading {glyphName!r} from local cache: {e!r}")
             return None
 
-    def _writeGlyphToCacheDir(self, glyphName, glyph):
+    def _writeGlyphToCacheDir(self, glyphName: str, glyph: VariableGlyph) -> None:
         if self.cacheDir is None:
             return
         glyphInfo = self._rcjkGlyphInfo[glyphName]
@@ -193,7 +200,7 @@ class RCJKMySQLBackend:
         except Exception as e:
             logger.exception(f"error writing {glyphName!r} to local cache: {e!r}")
 
-    def _deleteGlyphFromCacheDir(self, glyphName):
+    def _deleteGlyphFromCacheDir(self, glyphName: str) -> None:
         if self.cacheDir is None:
             return
         glyphInfo = self._rcjkGlyphInfo.get(glyphName)
@@ -203,7 +210,7 @@ class RCJKMySQLBackend:
         for stalePath in self.cacheDir.glob(globPattern):
             stalePath.unlink()
 
-    async def getGlyph(self, glyphName):
+    async def getGlyph(self, glyphName: str) -> VariableGlyph | None:
         await self._ensureGlyphMap()
         if glyphName not in self._glyphMap:
             return None
@@ -249,12 +256,14 @@ class RCJKMySQLBackend:
             assert glyphInfo.glyphID == subGlyphData["id"]
             self._populateGlyphCache(subGlyphName, subGlyphData)
 
-    async def putGlyph(self, glyphName, glyph, unicodes):
+    async def putGlyph(
+        self, glyphName: str, glyph: VariableGlyph, codePoints: list[int]
+    ) -> None:
         await self._ensureGlyphMap()
         logger.info(f"Start writing {glyphName}")
         self._writingChanges += 1
         try:
-            return await self._putGlyph(glyphName, glyph, unicodes)
+            return await self._putGlyph(glyphName, glyph, codePoints)
         finally:
             self._writingChanges -= 1
             logger.info(f"Done writing {glyphName}")
