@@ -292,6 +292,8 @@ class RCJKMySQLBackend:
 
         lockResponse = await self._callGlyphMethod(glyphName, "lock", return_data=False)
 
+        error = False
+
         try:
             glyphTimeStamp = self._glyphTimeStamps[glyphName]
             currentTimeStamp = getUpdatedTimeStamp(lockResponse["data"])
@@ -326,12 +328,14 @@ class RCJKMySQLBackend:
                 )
             self._glyphCache[glyphName] = layerGlyphs
         except Exception:
-            asyncio.get_running_loop().call_soon(self._pollNowEvent.set)
+            error = True
             raise
         finally:
             unlockResponse = await self._callGlyphMethod(
                 glyphName, "unlock", return_data=False
             )
+            if error:
+                asyncio.get_running_loop().call_soon(self._pollNowEvent.set)
 
         timeStamp = getUpdatedTimeStamp(unlockResponse["data"])
         self._glyphTimeStamps[glyphName] = timeStamp
