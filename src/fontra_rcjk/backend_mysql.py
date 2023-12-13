@@ -27,7 +27,6 @@ from .base import (
     standardCustomDataItems,
     unpackAxes,
 )
-from .client import HTTPError
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +43,10 @@ _baseGlyphMethods = {
     "DC": "deep_component_",
     "CG": "character_glyph_",
 }
+
+
+class RCJKEditError(Exception):
+    pass
 
 
 @dataclass
@@ -268,7 +271,9 @@ class RCJKMySQLBackend:
             self._writingChanges -= 1
             logger.info(f"Done writing {glyphName}")
 
-    async def _putGlyph(self, glyphName, glyph, unicodes):
+    async def _putGlyph(
+        self, glyphName: str, glyph: VariableGlyph, unicodes: list[int]
+    ) -> None:
         defaultLocation = await self.getDefaultLocation()
 
         if glyphName not in self._rcjkGlyphInfo:
@@ -285,62 +290,57 @@ class RCJKMySQLBackend:
 
         self._glyphMap[glyphName] = unicodes
 
-        try:
-            lockResponse = await self._callGlyphMethod(
-                glyphName, "lock", return_data=False
-            )
-        except HTTPError as error:
-            return f"Can't lock glyph ({error})"
+        lockResponse = await self._callGlyphMethod(glyphName, "lock", return_data=False)
 
-        errorMessage = None
+        error = False
 
         try:
             glyphTimeStamp = self._glyphTimeStamps[glyphName]
             currentTimeStamp = getUpdatedTimeStamp(lockResponse["data"])
             if glyphTimeStamp != currentTimeStamp:
-                errorMessage = "Someone else made an edit just before you."
-            else:
-                for layerName, layerGlyph in layerGlyphs.items():
-                    xmlData = layerGlyph.asGLIFData()
-                    existingXMLData = existingLayerData.get(layerName)
-                    if xmlData == existingXMLData:
-                        # There was no change in the xml data, skip the update
-                        continue
-                    if layerName == "foreground":
-                        args = (glyphName, "update", xmlData)
-                    else:
-                        methodName = "layer_update"
-                        if existingXMLData is None:
-                            logger.info(f"Creating layer {layerName} of {glyphName}")
-                            methodName = "layer_create"
-                        args = (glyphName, methodName, layerName, xmlData)
-                    await self._callGlyphMethod(
-                        *args,
-                        return_data=False,
-                        return_layers=False,
-                    )
-                for layerName in set(existingLayerData) - set(layerGlyphs):
-                    logger.info(f"Deleting layer {layerName} of {glyphName}")
-                    await self._callGlyphMethod(
-                        glyphName,
-                        "layer_delete",
-                        layerName,
-                    )
-                self._glyphCache[glyphName] = layerGlyphs
+                raise RCJKEditError("Someone else made an edit just before you.")
+
+            for layerName, layerGlyph in layerGlyphs.items():
+                xmlData = layerGlyph.asGLIFData()
+                existingXMLData = existingLayerData.get(layerName)
+                if xmlData == existingXMLData:
+                    # There was no change in the xml data, skip the update
+                    continue
+                if layerName == "foreground":
+                    args = [glyphName, "update", xmlData]
+                else:
+                    methodName = "layer_update"
+                    if existingXMLData is None:
+                        logger.info(f"Creating layer {layerName} of {glyphName}")
+                        methodName = "layer_create"
+                    args = [glyphName, methodName, layerName, xmlData]
+                await self._callGlyphMethod(
+                    *args,
+                    return_data=False,
+                    return_layers=False,
+                )
+            for layerName in set(existingLayerData) - set(layerGlyphs):
+                logger.info(f"Deleting layer {layerName} of {glyphName}")
+                await self._callGlyphMethod(
+                    glyphName,
+                    "layer_delete",
+                    layerName,
+                )
+            self._glyphCache[glyphName] = layerGlyphs
+        except Exception:
+            error = True
+            raise
         finally:
             unlockResponse = await self._callGlyphMethod(
                 glyphName, "unlock", return_data=False
             )
-            if errorMessage:
+            if error:
                 asyncio.get_running_loop().call_soon(self._pollNowEvent.set)
 
-        if errorMessage is None:
-            timeStamp = getUpdatedTimeStamp(unlockResponse["data"])
-            self._glyphTimeStamps[glyphName] = timeStamp
-            self._rcjkGlyphInfo[glyphName].updated = timeStamp
-            self._writeGlyphToCacheDir(glyphName, glyph)
-
-        return errorMessage
+        timeStamp = getUpdatedTimeStamp(unlockResponse["data"])
+        self._glyphTimeStamps[glyphName] = timeStamp
+        self._rcjkGlyphInfo[glyphName].updated = timeStamp
+        self._writeGlyphToCacheDir(glyphName, glyph)
 
     async def _newGlyph(self, glyphName: str, unicodes: list[int]) -> None:
         # In _newGlyph() we create a new character glyph in the database.
