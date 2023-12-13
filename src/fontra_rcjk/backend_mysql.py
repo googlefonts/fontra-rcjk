@@ -194,6 +194,8 @@ class RCJKMySQLBackend:
             logger.exception(f"error writing {glyphName!r} to local cache: {e!r}")
 
     def _deleteGlyphFromCacheDir(self, glyphName):
+        if self.cacheDir is None:
+            return
         glyphInfo = self._rcjkGlyphInfo.get(glyphName)
         if glyphInfo is None:
             return
