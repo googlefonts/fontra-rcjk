@@ -61,3 +61,19 @@ testpaths = [
     "tests",
 ]
 asyncio_mode = "auto"
+
+[[tool.mypy.overrides]]
+module = "fontTools.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "glyphsLib.glyphdata"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "urllib3"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "requests"
+ignore_missing_imports = true

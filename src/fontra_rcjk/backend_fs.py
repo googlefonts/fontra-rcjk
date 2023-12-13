@@ -4,12 +4,20 @@ import os
 import pathlib
 import shutil
 from functools import cached_property
+from os import PathLike
+from typing import Any
 
 import watchfiles
 from fontra.backends.designspace import cleanupWatchFilesChanges
 from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
-from fontra.core.classes import unstructure
+from fontra.core.classes import (
+    GlobalAxis,
+    GlobalDiscreteAxis,
+    VariableGlyph,
+    unstructure,
+)
 from fontra.core.instancer import mapLocationFromUserToSource
+from fontra.core.protocols import WritableFontBackend
 from fontTools.ufoLib.filenames import userNameToFileName
 
 from .base import (
@@ -33,14 +41,14 @@ FONTLIB_FILENAME = "fontLib.json"
 
 class RCJKBackend:
     @classmethod
-    def fromPath(cls, path):
+    def fromPath(cls, path: PathLike) -> WritableFontBackend:
         return cls(path)
 
     @classmethod
-    def createFromPath(cls, path):
+    def createFromPath(cls, path: PathLike) -> WritableFontBackend:
         return cls(path, create=True)
 
-    def __init__(self, path, *, create=False):
+    def __init__(self, path: PathLike, *, create: bool = False):
         self.path = pathlib.Path(path).resolve()
         if create:
             if self.path.is_dir():
@@ -49,9 +57,7 @@ class RCJKBackend:
                 self.path.unlink()
             cgPath = self.path / "characterGlyph"
             cgPath.mkdir(exist_ok=True, parents=True)
-            self.characterGlyphGlyphSet = (
-                RCJKGlyphSet(cgPath, self.registerWrittenPath),
-            )
+            self.characterGlyphGlyphSet = RCJKGlyphSet(cgPath, self.registerWrittenPath)
 
         for name in glyphSetNames:
             setattr(
@@ -69,7 +75,7 @@ class RCJKBackend:
         else:
             self.designspace = {}
 
-        self._glyphMap = {}
+        self._glyphMap: dict[str, list[int]] = {}
         for gs, hasEncoding in self._iterGlyphSets():
             glyphMap = gs.getGlyphMap(not hasEncoding)
             for glyphName, unicodes in glyphMap.items():
@@ -78,7 +84,7 @@ class RCJKBackend:
                     assert not unicodes
                 self._glyphMap[glyphName] = unicodes
 
-        self._recentlyWrittenPaths = {}
+        self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
 
     def close(self):
@@ -111,13 +117,16 @@ class RCJKBackend:
         }
         return mapLocationFromUserToSource(userLoc, axes)
 
-    async def getGlyphMap(self):
+    async def getGlyphMap(self) -> dict[str, list[int]]:
         return dict(self._glyphMap)
 
-    async def getGlobalAxes(self):
+    async def putGlyphMap(self, glyphMap: dict[str, list[int]]) -> None:
+        pass
+
+    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
         return unpackAxes(self.designspace.get("axes", ()))
 
-    async def putGlobalAxes(self, axes):
+    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
         self.designspace["axes"] = unstructure(axes)
         if hasattr(self, "_defaultLocation"):
             del self._defaultLocation
@@ -129,10 +138,13 @@ class RCJKBackend:
             json.dumps(self.designspace, indent=2), encoding="utf-8"
         )
 
-    async def getUnitsPerEm(self):
+    async def getUnitsPerEm(self) -> int:
         return 1000
 
-    async def getGlyph(self, glyphName):
+    async def putUnitsPerEm(self, value: int) -> None:
+        pass
+
+    async def getGlyph(self, glyphName: str) -> VariableGlyph | None:
         layerGlyphs = self._getLayerGlyphs(glyphName)
         return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
 
@@ -168,7 +180,9 @@ class RCJKBackend:
                 return gs.getGlyphLayerData(glyphName)
         return None
 
-    async def putGlyph(self, glyphName, glyph, unicodes):
+    async def putGlyph(
+        self, glyphName: str, glyph: VariableGlyph, unicodes: list[int]
+    ) -> None:
         if glyphName not in self._glyphMap:
             existingLayerGlyphs = {}
         else:
@@ -194,14 +208,14 @@ class RCJKBackend:
 
         del self._glyphMap[glyphName]
 
-    async def getCustomData(self):
+    async def getCustomData(self) -> dict[str, Any]:
         customData = {}
         customDataPath = self.path / FONTLIB_FILENAME
         if customDataPath.is_file():
             customData = json.loads(customDataPath.read_text(encoding="utf-8"))
         return customData | standardCustomDataItems
 
-    async def putCustomData(self, customData):
+    async def putCustomData(self, customData: dict[str, Any]) -> None:
         customDataPath = self.path / FONTLIB_FILENAME
         customData = {
             k: v

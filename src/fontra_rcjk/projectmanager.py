@@ -1,11 +1,15 @@
+import argparse
 import logging
 import pathlib
 import secrets
 from importlib import resources
+from types import SimpleNamespace
+from typing import Callable
 from urllib.parse import parse_qs, quote
 
 from aiohttp import web
 from fontra.core.fonthandler import FontHandler
+from fontra.core.protocols import ProjectManager
 
 from .backend_mysql import RCJKMySQLBackend
 from .client import HTTPError
@@ -16,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 class RCJKProjectManagerFactory:
     @staticmethod
-    def addArguments(parser):
+    def addArguments(parser: argparse.ArgumentParser) -> None:
         parser.add_argument("rcjk_host")
         parser.add_argument("--read-only", action="store_true")
         parser.add_argument("--cache-dir")
 
     @staticmethod
-    def getProjectManager(arguments):
+    def getProjectManager(arguments: SimpleNamespace) -> ProjectManager:
         return RCJKProjectManager(
             host=arguments.rcjk_host,
             readOnly=arguments.read_only,
@@ -40,11 +44,11 @@ class RCJKProjectManager:
         self.cacheDir = cacheDir
         self.authorizedClients = {}
 
-    async def close(self):
+    async def close(self) -> None:
         for client in self.authorizedClients.values():
             await client.close()
 
-    def setupWebRoutes(self, fontraServer):
+    def setupWebRoutes(self, fontraServer) -> None:
         routes = [
             web.post("/login", self.loginHandler),
             web.post("/logout", self.logoutHandler),
@@ -53,7 +57,7 @@ class RCJKProjectManager:
         self.cookieMaxAge = fontraServer.cookieMaxAge
         self.startupTime = fontraServer.startupTime
 
-    async def loginHandler(self, request):
+    async def loginHandler(self, request: web.Request) -> web.Response:
         formContent = parse_qs(await request.text())
         username = formContent["username"][0]
         password = formContent["password"][0]
@@ -74,29 +78,33 @@ class RCJKProjectManager:
         else:
             response.set_cookie("fontra-authorization-failed", "true", max_age=5)
             response.del_cookie("fontra-authorization-token")
-        raise response
+        return response
 
-    async def logoutHandler(self, request):
+    async def logoutHandler(self, request: web.Request) -> web.Response:
         token = request.cookies.get("fontra-authorization-token")
         if token is not None and token in self.authorizedClients:
             client = self.authorizedClients.pop(token)
             logger.info(f"logging out '{client.username}'")
             await client.close()
-        raise web.HTTPFound("/")
+        return web.HTTPFound("/")
 
-    async def authorize(self, request):
+    async def authorize(self, request: web.Request) -> str | None:
         token = request.cookies.get("fontra-authorization-token")
         if token not in self.authorizedClients:
             return None
         return token
 
-    async def projectPageHandler(self, request, filterContent=None):
+    async def projectPageHandler(
+        self,
+        request: web.Request,
+        filterContent: Callable[[bytes, str], bytes] | None = None,
+    ) -> web.Response:
         token = await self.authorize(request)
         htmlPath = resources.files("fontra_rcjk") / "landing.html"
-        html = htmlPath.read_text()
+        html = htmlPath.read_bytes()
         if filterContent is not None:
             html = filterContent(html, "text/html")
-        response = web.Response(text=html, content_type="text/html")
+        response = web.Response(body=html, content_type="text/html")
 
         if token:
             response.set_cookie(
@@ -107,7 +115,7 @@ class RCJKProjectManager:
 
         return response
 
-    async def login(self, username, password):
+    async def login(self, username: str, password: str) -> str | None:
         url = f"https://{self.host}/"
         rcjkClient = RCJKClientAsync(
             host=url,
@@ -127,15 +135,15 @@ class RCJKProjectManager:
         )
         return token
 
-    async def projectAvailable(self, path, token):
+    async def projectAvailable(self, path: str, token: str) -> bool:
         client = self.authorizedClients[token]
         return await client.projectAvailable(path)
 
-    async def getProjectList(self, token):
+    async def getProjectList(self, token: str) -> list[str]:
         client = self.authorizedClients[token]
         return await client.getProjectList()
 
-    async def getRemoteSubject(self, path, token):
+    async def getRemoteSubject(self, path: str, token: str) -> FontHandler | None:
         client = self.authorizedClients.get(token)
         if client is None:
             logger.info("reject unrecognized token")
@@ -166,22 +174,22 @@ class AuthorizedClient:
         for fontHandler in self.fontHandlers.values():
             await fontHandler.close()
 
-    async def projectAvailable(self, path):
+    async def projectAvailable(self, path: str) -> bool:
         await self._setupProjectList()
         return path in self.projectMapping
 
-    async def getProjectList(self):
+    async def getProjectList(self) -> list[str]:
         await self._setupProjectList(True)
         return sorted(self.projectMapping)
 
-    async def _setupProjectList(self, forceRebuild=False):
+    async def _setupProjectList(self, forceRebuild: bool = False) -> None:
         if not forceRebuild and self.projectMapping is not None:
             return
         projectMapping = await self.rcjkClient.get_project_font_uid_mapping()
         projectMapping = {f"{p}/{f}": uids for (p, f), uids in projectMapping.items()}
         self.projectMapping = projectMapping
 
-    async def getFontHandler(self, path):
+    async def getFontHandler(self, path: str) -> FontHandler:
         fontHandler = self.fontHandlers.get(path)
         if fontHandler is None:
             _, fontUID = self.projectMapping[path]
