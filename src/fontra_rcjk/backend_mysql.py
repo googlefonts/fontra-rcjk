@@ -6,7 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from random import random
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from fontra.backends.designspace import makeGlyphMapChange
 from fontra.core.classes import (
@@ -342,7 +342,7 @@ class RCJKMySQLBackend:
 
         return errorMessage
 
-    async def _newGlyph(self, glyphName, unicodes):
+    async def _newGlyph(self, glyphName: str, unicodes: list[int]) -> None:
         # In _newGlyph() we create a new character glyph in the database.
         # _putGlyph will immediately overwrite it with the real glyph data,
         # with a lock acquired. Our dummy glyph has to have a glyph name, but
@@ -363,7 +363,7 @@ class RCJKMySQLBackend:
         self._rcjkGlyphInfo[glyphName] = RCJKGlyphInfo("CG", glyphID, timeStamp)
         self._glyphTimeStamps[glyphName] = timeStamp
 
-    async def deleteGlyph(self, glyphName):
+    async def deleteGlyph(self, glyphName: str) -> None:
         await self._ensureGlyphMap()
         if glyphName not in self._rcjkGlyphInfo:
             raise KeyError(f"Glyph '{glyphName}' does not exist")
@@ -391,7 +391,7 @@ class RCJKMySQLBackend:
         method = getattr(self.client, apiMethodName)
         return await method(self.fontUID, glyphInfo.glyphID, *args, **kwargs)
 
-    async def watchExternalChanges(self):
+    async def watchExternalChanges(self) -> AsyncGenerator[tuple[Any, Any], None]:
         await self._ensureGlyphMap()
         errorDelay = 30
         while True:
@@ -406,7 +406,7 @@ class RCJKMySQLBackend:
                 if externalChange or reloadPattern:
                     yield externalChange, reloadPattern
 
-    async def _pollOnceForChanges(self):
+    async def _pollOnceForChanges(self) -> tuple[Any, Any]:
         try:
             await asyncio.wait_for(
                 self._pollNowEvent.wait(),
@@ -428,7 +428,7 @@ class RCJKMySQLBackend:
         )
         responseData = response["data"]
         glyphNames = set()
-        glyphMapUpdates = {}
+        glyphMapUpdates: dict[str, list[int] | None] = {}
         latestTimeStamp = ""  # less than any timestamp string
 
         for glyphInfo in responseData.get("deleted_glifs", []):
@@ -490,11 +490,11 @@ class RCJKMySQLBackend:
         return externalChange, reloadPattern
 
 
-def _unicodesFromGlyphInfo(glyphInfo):
+def _unicodesFromGlyphInfo(glyphInfo: dict) -> list[int]:
     return glyphInfo.get("unicodes", [])
 
 
-def getUpdatedTimeStamp(info):
+def getUpdatedTimeStamp(info: dict) -> str:
     timeStamp = info["updated_at"]
     layers_updated_at = info.get("layers_updated_at")
     if layers_updated_at:
@@ -502,7 +502,7 @@ def getUpdatedTimeStamp(info):
     return timeStamp
 
 
-def buildLayerGlyphsFromResponseData(glyphData):
+def buildLayerGlyphsFromResponseData(glyphData: dict) -> dict[str, GLIFGlyph]:
     layerGLIFData = [("foreground", glyphData["data"])]
     layerGLIFData.extend(
         (layer["group_name"], layer["data"]) for layer in glyphData.get("layers", ())
@@ -551,7 +551,7 @@ class LRUCache(dict):
             del self[next(iter(self))]
 
 
-def fudgeTimeStamp(isoString):
+def fudgeTimeStamp(isoString: str) -> str:
     """Add one millisecond to the timestamp, so we can account for differences
     in the microsecond range.
     """
