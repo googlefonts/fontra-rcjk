@@ -78,7 +78,7 @@ class RCJKProjectManager:
         else:
             response.set_cookie("fontra-authorization-failed", "true", max_age=5)
             response.del_cookie("fontra-authorization-token")
-        return response
+        raise response
 
     async def logoutHandler(self, request: web.Request) -> web.Response:
         token = request.cookies.get("fontra-authorization-token")
@@ -86,7 +86,7 @@ class RCJKProjectManager:
             client = self.authorizedClients.pop(token)
             logger.info(f"logging out '{client.username}'")
             await client.close()
-        return web.HTTPFound("/")
+        raise web.HTTPFound("/")
 
     async def authorize(self, request: web.Request) -> str | None:
         token = request.cookies.get("fontra-authorization-token")
