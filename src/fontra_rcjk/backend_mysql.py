@@ -385,7 +385,7 @@ class RCJKMySQLBackend:
         del self._glyphMap[glyphName]
         self._glyphCache.pop(glyphName, None)
 
-    async def getUsedBy(self, glyphName: str) -> list[str]:
+    async def getGlyphsUsedBy(self, glyphName: str) -> list[str]:
         glyphInfo = self._rcjkGlyphInfo.get(glyphName)
         if glyphInfo is None:
             return []
