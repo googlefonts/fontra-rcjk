@@ -385,6 +385,25 @@ class RCJKMySQLBackend:
         del self._glyphMap[glyphName]
         self._glyphCache.pop(glyphName, None)
 
+    async def getUsedBy(self, glyphName: str) -> list[str]:
+        glyphInfo = self._rcjkGlyphInfo.get(glyphName)
+        if glyphInfo is None:
+            return []
+        getMethodName = _getFullMethodName(glyphInfo.typeCode, "get")
+        method = getattr(self.client, getMethodName)
+        response = await method(
+            self.fontUID,
+            glyphInfo.glyphID,
+            return_data=False,
+            return_related=False,
+            return_layers=False,
+            return_made_of=False,
+            return_used_by=True,
+        )
+        data = response["data"]
+        assert data["name"] == glyphName
+        return [item["name"] for item in data.get("used_by", [])]
+
     async def _callGlyphMethod(self, glyphName, methodName, *args, **kwargs):
         glyphInfo = self._rcjkGlyphInfo[glyphName]
         apiMethodName = _getFullMethodName(glyphInfo.typeCode, methodName)
