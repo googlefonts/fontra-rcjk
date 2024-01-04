@@ -408,7 +408,7 @@ async def test_getGlyph(backendName, expectedGlyph):
 async def test_getGlyphUnknownGlyph():
     font = getTestFont("rcjk")
     with contextlib.closing(font):
-        glyph = await font.getGlyph("some_non_existant_glyph")
+        glyph = await font.getGlyph("a-glyph-that-does-not-exist")
         assert glyph is None
 
 
