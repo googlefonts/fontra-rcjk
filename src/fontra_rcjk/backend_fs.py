@@ -145,7 +145,10 @@ class RCJKBackend:
         pass
 
     async def getGlyph(self, glyphName: str) -> VariableGlyph | None:
-        layerGlyphs = self._getLayerGlyphs(glyphName)
+        try:
+            layerGlyphs = self._getLayerGlyphs(glyphName)
+        except KeyError:
+            return None
         return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
 
     def _getLayerGlyphs(self, glyphName):
