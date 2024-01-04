@@ -404,6 +404,14 @@ async def test_getGlyph(backendName, expectedGlyph):
         assert glyph == expectedGlyph
 
 
+@pytest.mark.asyncio
+async def test_getGlyphUnknownGlyph():
+    font = getTestFont("rcjk")
+    with contextlib.closing(font):
+        glyph = await font.getGlyph("some_non_existant_glyph")
+        assert glyph is None
+
+
 getGlobalAxesTestData = [
     (
         "rcjk",
