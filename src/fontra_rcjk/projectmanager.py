@@ -219,7 +219,7 @@ class AuthorizedClient:
         userMeResponse = await self.rcjkClient.user_me()
         userInfo = userMeResponse["data"]
 
-        # Only check write permissions is the users belongs to at least one group
+        # Only check write permissions is the user belongs to at least one group
         userReadOnly = (
             not _hasKeyValue(
                 userInfo["permissions"], "codename", "change_characterglyph"
