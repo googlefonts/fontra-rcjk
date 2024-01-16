@@ -197,6 +197,8 @@ class AuthorizedClient:
                 self.rcjkClient, fontUID, self.cacheDir
             )
 
+            userReadOnly, dummyEditor = await self._userPermissions()
+
             async def closeFontHandler():
                 logger.info(f"closing FontHandler '{path}' for '{self.username}'")
                 del self.fontHandlers[path]
@@ -205,9 +207,35 @@ class AuthorizedClient:
             logger.info(f"new FontHandler for '{path}'")
             fontHandler = FontHandler(
                 backend,
-                readOnly=self.readOnly,
+                readOnly=self.readOnly or userReadOnly,
+                dummyEditor=dummyEditor,
                 allConnectionsClosedCallback=closeFontHandler,
             )
             await fontHandler.startTasks()
             self.fontHandlers[path] = fontHandler
         return fontHandler
+
+    async def _userPermissions(self) -> tuple[bool, bool]:
+        userMeResponse = await self.rcjkClient.user_me()
+        userInfo = userMeResponse["data"]
+
+        # Only check write permissions is the user belongs to at least one group
+        userReadOnly = (
+            not _hasKeyValue(
+                userInfo["permissions"], "codename", "change_characterglyph"
+            )
+            if "permissions" in userInfo and userInfo.get("groups")
+            else False
+        )
+
+        dummyEditor = (
+            _hasKeyValue(userInfo["groups"], "name", "DummyDesigners")
+            if "groups" in userInfo
+            else False
+        )
+
+        return userReadOnly, dummyEditor
+
+
+def _hasKeyValue(items, key, value):
+    return any(item.get(key) == value for item in items)
