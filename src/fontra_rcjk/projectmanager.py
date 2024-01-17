@@ -207,8 +207,7 @@ class AuthorizedClient:
             logger.info(f"new FontHandler for '{path}'")
             fontHandler = FontHandler(
                 backend,
-                readOnly=self.readOnly or userReadOnly,
-                dummyEditor=dummyEditor,
+                readOnly=self.readOnly,
                 allConnectionsClosedCallback=closeFontHandler,
             )
             await fontHandler.startTasks()
