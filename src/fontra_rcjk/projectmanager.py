@@ -207,7 +207,8 @@ class AuthorizedClient:
             logger.info(f"new FontHandler for '{path}'")
             fontHandler = FontHandler(
                 backend,
-                readOnly=self.readOnly,
+                readOnly=self.readOnly or userReadOnly,
+                dummyEditor=dummyEditor,
                 allConnectionsClosedCallback=closeFontHandler,
             )
             await fontHandler.startTasks()
@@ -218,22 +219,21 @@ class AuthorizedClient:
         userMeResponse = await self.rcjkClient.user_me()
         userInfo = userMeResponse["data"]
 
-        # Only check write permissions is the user belongs to at least one group
-        userReadOnly = (
-            not _hasKeyValue(
-                userInfo["permissions"], "codename", "change_characterglyph"
-            )
-            if "permissions" in userInfo and userInfo.get("groups")
-            else False
-        )
+        groupsList = userInfo.get("groups")
 
-        dummyEditor = (
-            _hasKeyValue(userInfo["groups"], "name", "DummyDesigners")
-            if "groups" in userInfo
-            else False
-        )
+        if groupsList is None:
+            # b/w compat
+            return False, False
 
-        return userReadOnly, dummyEditor
+        groups = {group["name"] for group in groupsList}
+
+        if "DummyDesigners" in groups:
+            return True, True
+
+        if "Reviewers" in groups:
+            return True, False
+
+        return False, False
 
 
 def _hasKeyValue(items, key, value):
