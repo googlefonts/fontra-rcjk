@@ -28,7 +28,7 @@ FONTRA_STATUS_KEY = "fontra.development.status"
 class GLIFGlyph:
     def __init__(self):
         self.name = None  # Must be set to a string before we can write GLIF data
-        self.codePoints = []
+        self.unicodes = []
         self.width = 0
         self.path = None
         self.lib = {}
