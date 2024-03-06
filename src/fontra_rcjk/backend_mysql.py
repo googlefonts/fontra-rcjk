@@ -510,7 +510,7 @@ class RCJKMySQLBackend:
 
 
 def _codePointsFromGlyphInfo(glyphInfo: dict) -> list[int]:
-    return glyphInfo.get("codePoints", [])
+    return glyphInfo.get("unicodes", [])
 
 
 def getUpdatedTimeStamp(info: dict) -> str:
