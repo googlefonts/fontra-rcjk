@@ -28,7 +28,7 @@ FONTRA_STATUS_KEY = "fontra.development.status"
 class GLIFGlyph:
     def __init__(self):
         self.name = None  # Must be set to a string before we can write GLIF data
-        self.unicodes = []
+        self.codePoints = []
         self.width = 0
         self.path = None
         self.lib = {}
@@ -254,7 +254,7 @@ def convertTransformation(rcjkTransformation):
 
 
 def buildLayerGlyphsFromVariableGlyph(
-    glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
+    glyphName, glyph, codePoints, defaultLocation, existingLayerGlyphs
 ):
     fontraLayerNameMapping = {}
     defaultLayerName = None
@@ -284,7 +284,7 @@ def buildLayerGlyphsFromVariableGlyph(
             fontraLayerNameMapping[safeLayerName] = layerName
 
         layerGlyphs[layerName] = layerGlyph
-        layerGlyphs[layerName].unicodes = unicodes
+        layerGlyphs[layerName].unicodes = codePoints
     defaultGlyph = layerGlyphs["foreground"]
 
     if glyph.axes:
