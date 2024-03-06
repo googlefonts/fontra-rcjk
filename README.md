@@ -3,8 +3,8 @@ Fontra plug-in with [django-robocjk](https://github.com/googlefonts/django-robo-
 
 
 # How to test code changes made in fontra which effects fontra-rjck
-Let's imagine you have made some changes within fontra, which will have an impakt to fontra-rcjk as well, eg. code refactoring. But the the new code is not merged, yet, because we need to test it first.
-The challanging part is, that we cannot add a specific branch to requirements-dev.txt sadly.
+Let's imagine you have made some changes within fontra, which may have an impact to fontra-rcjk as well, eg. code refactoring. But the new code is not merged, yet, because we need to test it first.
+The challenging part is, that we cannot add a specific branch to requirements-dev.txt, sadly.
 
 1. Go to your local fontra folder/repo
 2. Checkout the needed fontra branch into your current venv
