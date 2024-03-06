@@ -18,6 +18,6 @@ Please keep in mind the *_fs backend has some unit tests. The mysql one does not
 # How to run a rcjk project
 
 1. Start fontra like this: `fontra rcjk robocjk.black-foundry.com`
-2. Open the `http://localhost:8000/`
+2. Open `http://localhost:8000/`
 3. Then use your robocjk login credentials to log in.
 4. Click a project.
