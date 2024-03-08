@@ -6,7 +6,6 @@ class HTTPError(Exception):
 
 
 class Client:
-
     """
     Client to interact with the Robo-CJK back-end.
     Usage:
