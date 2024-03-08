@@ -254,7 +254,7 @@ def convertTransformation(rcjkTransformation):
 
 
 def buildLayerGlyphsFromVariableGlyph(
-    glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
+    glyphName, glyph, codePoints, defaultLocation, existingLayerGlyphs
 ):
     fontraLayerNameMapping = {}
     defaultLayerName = None
@@ -284,7 +284,7 @@ def buildLayerGlyphsFromVariableGlyph(
             fontraLayerNameMapping[safeLayerName] = layerName
 
         layerGlyphs[layerName] = layerGlyph
-        layerGlyphs[layerName].unicodes = unicodes
+        layerGlyphs[layerName].unicodes = codePoints
     defaultGlyph = layerGlyphs["foreground"]
 
     if glyph.axes:

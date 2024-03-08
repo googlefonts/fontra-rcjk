@@ -105,7 +105,7 @@ class RCJKMySQLBackend:
             self._lastPolledForChanges = response["server_datetime"]
         for typeCode, typeName in _glyphTypes:
             for glyphInfo in response["data"][typeName]:
-                glyphMap[glyphInfo["name"]] = _unicodesFromGlyphInfo(glyphInfo)
+                glyphMap[glyphInfo["name"]] = _codePointsFromGlyphInfo(glyphInfo)
                 rcjkGlyphInfo[glyphInfo["name"]] = RCJKGlyphInfo(
                     typeCode, glyphInfo["id"], getUpdatedTimeStamp(glyphInfo)
                 )
@@ -272,12 +272,12 @@ class RCJKMySQLBackend:
             logger.info(f"Done writing {glyphName}")
 
     async def _putGlyph(
-        self, glyphName: str, glyph: VariableGlyph, unicodes: list[int]
+        self, glyphName: str, glyph: VariableGlyph, codePoints: list[int]
     ) -> None:
         defaultLocation = await self.getDefaultLocation()
 
         if glyphName not in self._rcjkGlyphInfo:
-            await self._newGlyph(glyphName, unicodes)
+            await self._newGlyph(glyphName, codePoints)
             existingLayerGlyphs = {}
         else:
             existingLayerGlyphs = await self._getLayerGlyphs(glyphName)
@@ -285,10 +285,10 @@ class RCJKMySQLBackend:
         existingLayerData = {k: v.asGLIFData() for k, v in existingLayerGlyphs.items()}
 
         layerGlyphs = buildLayerGlyphsFromVariableGlyph(
-            glyphName, glyph, unicodes, defaultLocation, existingLayerGlyphs
+            glyphName, glyph, codePoints, defaultLocation, existingLayerGlyphs
         )
 
-        self._glyphMap[glyphName] = unicodes
+        self._glyphMap[glyphName] = codePoints
 
         lockResponse = await self._callGlyphMethod(glyphName, "lock", return_data=False)
 
@@ -342,7 +342,7 @@ class RCJKMySQLBackend:
         self._rcjkGlyphInfo[glyphName].updated = timeStamp
         self._writeGlyphToCacheDir(glyphName, glyph)
 
-    async def _newGlyph(self, glyphName: str, unicodes: list[int]) -> None:
+    async def _newGlyph(self, glyphName: str, codePoints: list[int]) -> None:
         # In _newGlyph() we create a new character glyph in the database.
         # _putGlyph will immediately overwrite it with the real glyph data,
         # with a lock acquired. Our dummy glyph has to have a glyph name, but
@@ -351,14 +351,14 @@ class RCJKMySQLBackend:
         logger.info(f"Creating new glyph '{glyphName}'")
         dummyGlyph = GLIFGlyph()
         dummyGlyph.name = glyphName
-        dummyGlyph.unicodes = unicodes
+        dummyGlyph.unicodes = codePoints
         dummyGlyph.width = 314  # arbitrary positive value
         xmlData = dummyGlyph.asGLIFData()
         response = await self.client.character_glyph_create(
             self.fontUID, xmlData, return_data=False
         )
         glyphID = response["data"]["id"]
-        self._glyphMap[glyphName] = unicodes
+        self._glyphMap[glyphName] = codePoints
         timeStamp = getUpdatedTimeStamp(response["data"])
         self._rcjkGlyphInfo[glyphName] = RCJKGlyphInfo("CG", glyphID, timeStamp)
         self._glyphTimeStamps[glyphName] = timeStamp
@@ -491,10 +491,10 @@ class RCJKMySQLBackend:
                     typeCode, glyphInfo["id"], glyphUpdatedAt
                 )
 
-                unicodes = _unicodesFromGlyphInfo(glyphInfo)
-                if unicodes != self._glyphMap.get(glyphName):
-                    self._glyphMap[glyphName] = unicodes
-                    glyphMapUpdates[glyphName] = unicodes
+                codePoints = _codePointsFromGlyphInfo(glyphInfo)
+                if codePoints != self._glyphMap.get(glyphName):
+                    self._glyphMap[glyphName] = codePoints
+                    glyphMapUpdates[glyphName] = codePoints
 
                 glyphNames.add(glyphName)
                 self._glyphCache.pop(glyphName, None)
@@ -509,7 +509,7 @@ class RCJKMySQLBackend:
         return externalChange, reloadPattern
 
 
-def _unicodesFromGlyphInfo(glyphInfo: dict) -> list[int]:
+def _codePointsFromGlyphInfo(glyphInfo: dict) -> list[int]:
     return glyphInfo.get("unicodes", [])
 
 

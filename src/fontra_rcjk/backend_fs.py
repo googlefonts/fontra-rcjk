@@ -9,7 +9,7 @@ from typing import Any
 
 import watchfiles
 from fontra.backends.designspace import cleanupWatchFilesChanges
-from fontra.backends.ufo_utils import extractGlyphNameAndUnicodes
+from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
 from fontra.core.classes import (
     GlobalAxis,
     GlobalDiscreteAxis,
@@ -78,11 +78,11 @@ class RCJKBackend:
         self._glyphMap: dict[str, list[int]] = {}
         for gs, hasEncoding in self._iterGlyphSets():
             glyphMap = gs.getGlyphMap(not hasEncoding)
-            for glyphName, unicodes in glyphMap.items():
+            for glyphName, codePoints in glyphMap.items():
                 assert glyphName not in self._glyphMap
                 if not hasEncoding:
-                    assert not unicodes
-                self._glyphMap[glyphName] = unicodes
+                    assert not codePoints
+                self._glyphMap[glyphName] = codePoints
 
         self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
@@ -184,7 +184,7 @@ class RCJKBackend:
         return None
 
     async def putGlyph(
-        self, glyphName: str, glyph: VariableGlyph, unicodes: list[int]
+        self, glyphName: str, glyph: VariableGlyph, codePoints: list[int]
     ) -> None:
         if glyphName not in self._glyphMap:
             existingLayerGlyphs = {}
@@ -194,11 +194,11 @@ class RCJKBackend:
             axis.name: axis.defaultValue for axis in glyph.axes
         }
         layerGlyphs = buildLayerGlyphsFromVariableGlyph(
-            glyphName, glyph, unicodes, localDefaultLocation, existingLayerGlyphs
+            glyphName, glyph, codePoints, localDefaultLocation, existingLayerGlyphs
         )
         glyphSet = self.getGlyphSetForGlyph(glyphName)
         glyphSet.putGlyphLayerData(glyphName, layerGlyphs.items())
-        self._glyphMap[glyphName] = unicodes
+        self._glyphMap[glyphName] = codePoints
         self._tempGlyphCache[glyphName] = layerGlyphs
 
     async def deleteGlyph(self, glyphName):
@@ -276,17 +276,17 @@ class RCJKGlyphSet:
                 if glifPaths:
                     self.layers[layerDir.name] = glifPaths
 
-    def getGlyphMap(self, ignoreUnicodes=False):
+    def getGlyphMap(self, ignoreCodePoints=False):
         if self.glyphMap is None:
             glyphMap = {}
             for path in self.path.glob("*.glif"):
                 with open(path, "rb") as f:
                     # assuming all unicodes are in the first 1024 bytes of the file
                     data = f.read(1024)
-                glyphName, unicodes = extractGlyphNameAndUnicodes(data, path.name)
-                if ignoreUnicodes:
-                    unicodes = []
-                glyphMap[glyphName] = unicodes
+                glyphName, codePoints = extractGlyphNameAndCodePoints(data, path.name)
+                if ignoreCodePoints:
+                    codePoints = []
+                glyphMap[glyphName] = codePoints
                 self.contents[glyphName] = path
                 self.glifFileNames[path.name] = glyphName
             self.glyphMap = glyphMap
