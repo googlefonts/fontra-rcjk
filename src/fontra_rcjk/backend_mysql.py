@@ -351,7 +351,7 @@ class RCJKMySQLBackend:
         logger.info(f"Creating new glyph '{glyphName}'")
         dummyGlyph = GLIFGlyph()
         dummyGlyph.name = glyphName
-        dummyGlyph.codePoints = codePoints
+        dummyGlyph.unicodes = codePoints
         dummyGlyph.width = 314  # arbitrary positive value
         xmlData = dummyGlyph.asGLIFData()
         response = await self.client.character_glyph_create(
