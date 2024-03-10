@@ -79,7 +79,7 @@ class RCJKMySQLBackend:
         self._glyphMapTask = None
         self._defaultLocation = None
 
-    def close(self):
+    async def aclose(self):
         self._tempFontItemsCache.cancel()
 
     async def getGlyphMap(self) -> dict[str, list[int]]:

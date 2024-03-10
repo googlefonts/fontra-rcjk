@@ -1,5 +1,5 @@
 import pathlib
-from contextlib import closing
+from contextlib import aclosing
 
 from fontra.backends import getFileSystemBackend, newFileSystemBackend
 from fontra.backends.copy import copyFont
@@ -13,10 +13,10 @@ async def test_copy_font(tmpdir):
     destPath = tmpdir / "test.rcjk"
     srcFont = getFileSystemBackend(testFontPath)
     destFont = newFileSystemBackend(destPath)
-    with closing(srcFont), closing(destFont):
+    async with aclosing(srcFont), aclosing(destFont):
         await copyFont(srcFont, destFont)
         dupedFont = getFileSystemBackend(testFontPath)
-        with closing(dupedFont):
+        async with aclosing(dupedFont):
             glyphMap = await srcFont.getGlyphMap()
             assert glyphMap == await dupedFont.getGlyphMap()
             assert await srcFont.getGlobalAxes() == await dupedFont.getGlobalAxes()
