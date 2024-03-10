@@ -87,7 +87,7 @@ class RCJKBackend:
         self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
 
-    def close(self):
+    async def aclose(self):
         self._tempGlyphCache.cancel()
 
     def registerWrittenPath(self, path, *, deleted=False):

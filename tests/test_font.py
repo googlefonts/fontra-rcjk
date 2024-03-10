@@ -371,7 +371,7 @@ getGlyphNamesTestData = [
 )
 async def test_getGlyphNames(backendName, numGlyphs, firstFourGlyphNames):
     font = getTestFont(backendName)
-    with contextlib.closing(font):
+    async with contextlib.aclosing(font):
         glyphNames = sorted(await font.getGlyphMap())
         assert numGlyphs == len(glyphNames)
         assert firstFourGlyphNames == sorted(glyphNames)[:4]
@@ -386,7 +386,7 @@ getGlyphMapTestData = [
 @pytest.mark.parametrize("backendName, numGlyphs, testMapping", getGlyphMapTestData)
 async def test_getGlyphMap(backendName, numGlyphs, testMapping):
     font = getTestFont(backendName)
-    with contextlib.closing(font):
+    async with contextlib.aclosing(font):
         glyphMap = await font.getGlyphMap()
         assert numGlyphs == len(glyphMap)
         for glyphName, codePoints in testMapping.items():
@@ -398,7 +398,7 @@ async def test_getGlyphMap(backendName, numGlyphs, testMapping):
 async def test_getGlyph(backendName, expectedGlyph):
     expectedGlyph = structure(expectedGlyph, VariableGlyph)
     font = getTestFont(backendName)
-    with contextlib.closing(font):
+    async with contextlib.aclosing(font):
         glyph = await font.getGlyph(expectedGlyph.name)
         assert unstructure(glyph) == unstructure(expectedGlyph)
         assert glyph == expectedGlyph
@@ -407,7 +407,7 @@ async def test_getGlyph(backendName, expectedGlyph):
 @pytest.mark.asyncio
 async def test_getGlyphUnknownGlyph():
     font = getTestFont("rcjk")
-    with contextlib.closing(font):
+    async with contextlib.aclosing(font):
         glyph = await font.getGlyph("a-glyph-that-does-not-exist")
         assert glyph is None
 
@@ -553,7 +553,7 @@ glyphData_a_after = [
 
 
 async def test_putGlyph(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph("a")
         assert len(glyph.axes) == 0
@@ -600,7 +600,7 @@ glyphData_a_after_delete_source = [
 
 
 async def test_delete_source_layer(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glifPathBold = writableTestFont.path / "characterGlyph" / "bold" / "a.glif"
         assert glifPathBold.exists()
 
@@ -671,7 +671,7 @@ def makeTestPath():
 
 
 async def test_new_glyph(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyph = VariableGlyph(
             name="b",
             axes=[LocalAxis(name="wght", minValue=100, defaultValue=400, maxValue=700)],
@@ -692,7 +692,7 @@ async def test_new_glyph(writableTestFont):
 
 
 async def test_add_new_layer(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphName = "a"
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph(glyphName)
@@ -715,7 +715,7 @@ async def test_add_new_layer(writableTestFont):
 
 @pytest.mark.parametrize("glyphName", ["a", "uni0030"])
 async def test_write_roundtrip(writableTestFont, glyphName):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph(glyphName)
 
@@ -806,7 +806,7 @@ layerNameMappingTestData = [
 
 
 async def test_bad_layer_name(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphName = "a"
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph(glyphName)
@@ -858,7 +858,7 @@ deleteItemsTestData = [
 
 
 async def test_delete_items(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphName = "uni0030"
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph(glyphName)
@@ -906,7 +906,7 @@ expectedReadMixedComponentTestData = {
 
 async def test_readMixClassicAndVariableComponents():
     font = getTestFont("rcjk")
-    with contextlib.closing(font):
+    async with contextlib.aclosing(font):
         glyph = await font.getGlyph("b")
         assert expectedReadMixedComponentTestData == unstructure(glyph)
 
@@ -983,7 +983,7 @@ expectedWriteMixedComponentTestData = [
 
 
 async def test_writeMixClassicAndVariableComponents(writableTestFont):
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph("b")
         await writableTestFont.putGlyph("b", glyph, glyphMap["b"])
@@ -994,7 +994,7 @@ async def test_writeMixClassicAndVariableComponents(writableTestFont):
 
 async def test_deleteGlyph(writableTestFont):
     glyphName = "eight_00"
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         glyphMap = await writableTestFont.getGlyphMap()
         assert glyphName in glyphMap
         glyphPaths = list(writableTestFont.path.glob(f"**/{glyphName}.glif"))
@@ -1010,6 +1010,6 @@ async def test_deleteGlyph(writableTestFont):
 
 async def test_deleteGlyphRaisesKeyError(writableTestFont):
     glyphName = "A.doesnotexist"
-    with contextlib.closing(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
         with pytest.raises(KeyError, match="Glyph 'A.doesnotexist' does not exist"):
             await writableTestFont.deleteGlyph(glyphName)

@@ -44,9 +44,9 @@ class RCJKProjectManager:
         self.cacheDir = cacheDir
         self.authorizedClients = {}
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         for client in self.authorizedClients.values():
-            await client.close()
+            await client.aclose()
 
     def setupWebRoutes(self, fontraServer) -> None:
         routes = [
@@ -169,10 +169,10 @@ class AuthorizedClient:
     def username(self):
         return self.rcjkClient._username
 
-    async def close(self):
+    async def aclose(self):
         await self.rcjkClient.close()
         for fontHandler in self.fontHandlers.values():
-            await fontHandler.close()
+            await fontHandler.aclose()
 
     async def projectAvailable(self, path: str) -> bool:
         await self._setupProjectList()
@@ -202,7 +202,7 @@ class AuthorizedClient:
             async def closeFontHandler():
                 logger.info(f"closing FontHandler '{path}' for '{self.username}'")
                 del self.fontHandlers[path]
-                await fontHandler.close()
+                await fontHandler.aclose()
 
             logger.info(f"new FontHandler for '{path}'")
             fontHandler = FontHandler(
