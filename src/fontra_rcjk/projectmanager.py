@@ -202,7 +202,7 @@ class AuthorizedClient:
             async def closeFontHandler():
                 logger.info(f"closing FontHandler '{path}' for '{self.username}'")
                 del self.fontHandlers[path]
-                await fontHandler.close()
+                await fontHandler.aclose()
 
             logger.info(f"new FontHandler for '{path}'")
             fontHandler = FontHandler(
