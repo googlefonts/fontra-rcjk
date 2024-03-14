@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from random import random
 from typing import Any, Awaitable, Callable
 
-from fontra.backends.designspace import makeGlyphMapChange
 from fontra.core.classes import (
     GlobalAxis,
     GlobalDiscreteAxis,
@@ -426,18 +425,18 @@ class RCJKMySQLBackend:
         errorDelay = 30
         while True:
             try:
-                externalChange, reloadPattern = await self._pollOnceForChanges()
+                reloadPattern = await self._pollOnceForChanges()
             except Exception as e:
                 logger.error("error while polling for changes: %r", e)
                 traceback.print_exc()
                 logger.info(f"pausing the poll loop for {errorDelay} seconds")
                 await asyncio.sleep(errorDelay)
             else:
-                if externalChange or reloadPattern:
+                if reloadPattern:
                     for callback in self.watcherCallbacks:
-                        await callback(externalChange, reloadPattern)
+                        await callback(reloadPattern)
 
-    async def _pollOnceForChanges(self) -> tuple[Any, Any]:
+    async def _pollOnceForChanges(self) -> dict[str, Any] | None:
         try:
             await asyncio.wait_for(
                 self._pollNowEvent.wait(),
@@ -449,17 +448,17 @@ class RCJKMySQLBackend:
         self._pollNowEvent.clear()
         if self._lastPolledForChanges is None:
             # No glyphs have been requested, so there's nothing to update
-            return None, None
+            return None
         if self._writingChanges:
             # We're in the middle of writing changes, let's skip a round
-            return None, None
+            return None
         response = await self.client.glif_list(
             self.fontUID,
             updated_since=fudgeTimeStamp(self._lastPolledForChanges),
         )
         responseData = response["data"]
         glyphNames = set()
-        glyphMapUpdates: dict[str, list[int] | None] = {}
+        haveGlyphMapUpdates = False
         latestTimeStamp = ""  # less than any timestamp string
 
         for glyphInfo in responseData.get("deleted_glifs", []):
@@ -474,7 +473,7 @@ class RCJKMySQLBackend:
                     continue
 
                 logger.info(f"Found deleted glyph {glyphName}")
-                glyphMapUpdates[glyphName] = None
+                haveGlyphMapUpdates = True
                 del self._glyphMap[glyphName]
                 del self._rcjkGlyphInfo[glyphName]
                 latestTimeStamp = max(latestTimeStamp, glyphInfo["deleted_at"])
@@ -506,7 +505,7 @@ class RCJKMySQLBackend:
                 codePoints = _codePointsFromGlyphInfo(glyphInfo)
                 if codePoints != self._glyphMap.get(glyphName):
                     self._glyphMap[glyphName] = codePoints
-                    glyphMapUpdates[glyphName] = codePoints
+                    haveGlyphMapUpdates = True
 
                 glyphNames.add(glyphName)
                 self._glyphCache.pop(glyphName, None)
@@ -516,9 +515,14 @@ class RCJKMySQLBackend:
 
         self._lastPolledForChanges = latestTimeStamp
 
-        reloadPattern = {"glyphs": dict.fromkeys(glyphNames)} if glyphNames else None
-        externalChange = makeGlyphMapChange(glyphMapUpdates)
-        return externalChange, reloadPattern
+        reloadPattern: dict[str, Any] = (
+            {"glyphs": dict.fromkeys(glyphNames)} if glyphNames else {}
+        )
+
+        if haveGlyphMapUpdates:
+            reloadPattern["glyphMap"] = None
+
+        return reloadPattern
 
 
 def _codePointsFromGlyphInfo(glyphInfo: dict) -> list[int]:

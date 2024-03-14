@@ -86,7 +86,7 @@ class RCJKBackend:
         self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
         self.fileWatcher: FileWatcher | None = None
-        self.fileWatcherCallbacks: list[Callable[[Any, Any], Awaitable[None]]] = []
+        self.fileWatcherCallbacks: list[Callable[[Any], Awaitable[None]]] = []
 
     async def aclose(self) -> None:
         self._tempGlyphCache.cancel()
@@ -231,7 +231,7 @@ class RCJKBackend:
         customDataPath.write_text(json.dumps(customData, indent=2), encoding="utf-8")
 
     async def watchExternalChanges(
-        self, callback: Callable[[Any, Any], Awaitable[None]]
+        self, callback: Callable[[Any], Awaitable[None]]
     ) -> None:
         if self.fileWatcher is None:
             self.fileWatcher = FileWatcher(self._fileWatcherCallback)
@@ -245,7 +245,7 @@ class RCJKBackend:
         reloadPattern = await self.processExternalChanges(changes)
         if reloadPattern:
             for callback in self.fileWatcherCallbacks:
-                await callback(None, reloadPattern)
+                await callback(reloadPattern)
 
     async def processExternalChanges(self, changes) -> dict | None:
         glyphNames = set()
