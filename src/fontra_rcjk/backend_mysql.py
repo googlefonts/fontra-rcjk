@@ -83,6 +83,8 @@ class RCJKMySQLBackend:
 
     async def aclose(self):
         self._tempFontItemsCache.cancel()
+        if self.watcherTask is not None:
+            self.watcherTask.cancel()
 
     async def getGlyphMap(self) -> dict[str, list[int]]:
         await self._ensureGlyphMap()

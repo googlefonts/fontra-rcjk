@@ -90,6 +90,8 @@ class RCJKBackend:
 
     async def aclose(self):
         self._tempGlyphCache.cancel()
+        if self.fileWatcher is not None:
+            await self.fileWatcher.aclose()
 
     def registerWrittenPath(self, path, *, deleted=False):
         mTime = FILE_DELETED_TOKEN if deleted else os.path.getmtime(path)
