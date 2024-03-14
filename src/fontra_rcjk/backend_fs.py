@@ -5,10 +5,9 @@ import pathlib
 import shutil
 from functools import cached_property
 from os import PathLike
-from typing import Any
+from typing import Any, Awaitable, Callable
 
-import watchfiles
-from fontra.backends.designspace import cleanupWatchFilesChanges
+from fontra.backends.filewatcher import Change, FileWatcher
 from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
 from fontra.core.classes import (
     GlobalAxis,
@@ -86,9 +85,13 @@ class RCJKBackend:
 
         self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
+        self.fileWatcher: FileWatcher | None = None
+        self.fileWatcherCallbacks: list[Callable[[Any, Any], Awaitable[None]]] = []
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         self._tempGlyphCache.cancel()
+        if self.fileWatcher is not None:
+            await self.fileWatcher.aclose()
 
     def registerWrittenPath(self, path, *, deleted=False):
         mTime = FILE_DELETED_TOKEN if deleted else os.path.getmtime(path)
@@ -227,29 +230,45 @@ class RCJKBackend:
         }
         customDataPath.write_text(json.dumps(customData, indent=2), encoding="utf-8")
 
-    async def watchExternalChanges(self):
-        async for changes in watchfiles.awatch(self.path):
-            changes = cleanupWatchFilesChanges(changes)
-            glyphNames = set()
-            for change, path in changes:
-                mTime = (
-                    FILE_DELETED_TOKEN
-                    if not os.path.exists(path)
-                    else os.path.getmtime(path)
-                )
-                if self._recentlyWrittenPaths.pop(path, None) == mTime:
-                    # We made this change ourselves, so it is not an external change
-                    continue
-                fileName = os.path.basename(path)
-                for gs, _ in self._iterGlyphSets():
-                    glyphName = gs.glifFileNames.get(fileName)
-                    if glyphName is not None:
-                        break
+    async def watchExternalChanges(
+        self, callback: Callable[[Any, Any], Awaitable[None]]
+    ) -> None:
+        if self.fileWatcher is None:
+            self.fileWatcher = FileWatcher(self._fileWatcherCallback)
+            self.fileWatcher.setPaths(self._getFilesToWatch())
+        self.fileWatcherCallbacks.append(callback)
+
+    def _getFilesToWatch(self) -> list[os.PathLike | str]:
+        return [self.path]
+
+    async def _fileWatcherCallback(self, changes: set[tuple[Change, str]]) -> None:
+        reloadPattern = await self.processExternalChanges(changes)
+        if reloadPattern:
+            for callback in self.fileWatcherCallbacks:
+                await callback(None, reloadPattern)
+
+    async def processExternalChanges(self, changes) -> dict | None:
+        glyphNames = set()
+        for change, path in changes:
+            mTime = (
+                FILE_DELETED_TOKEN
+                if not os.path.exists(path)
+                else os.path.getmtime(path)
+            )
+            if self._recentlyWrittenPaths.pop(path, None) == mTime:
+                # We made this change ourselves, so it is not an external change
+                continue
+            fileName = os.path.basename(path)
+            for gs, _ in self._iterGlyphSets():
+                glyphName = gs.glifFileNames.get(fileName)
                 if glyphName is not None:
-                    glyphNames.add(glyphName)
-            if glyphNames:
-                self._tempGlyphCache.clear()
-                yield None, {"glyphs": dict.fromkeys(glyphNames)}
+                    break
+            if glyphName is not None:
+                glyphNames.add(glyphName)
+        if glyphNames:
+            self._tempGlyphCache.clear()
+            return {"glyphs": dict.fromkeys(glyphNames)}
+        return None
 
 
 class RCJKGlyphSet:

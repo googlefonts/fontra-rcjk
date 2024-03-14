@@ -6,7 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from random import random
-from typing import Any, AsyncGenerator
+from typing import Any, Awaitable, Callable
 
 from fontra.backends.designspace import makeGlyphMapChange
 from fontra.core.classes import (
@@ -78,9 +78,13 @@ class RCJKMySQLBackend:
         self._glyphMap = None
         self._glyphMapTask = None
         self._defaultLocation = None
+        self.watcherCallbacks = []
+        self.watcherTask = None
 
     async def aclose(self):
         self._tempFontItemsCache.cancel()
+        if self.watcherTask is not None:
+            self.watcherTask.cancel()
 
     async def getGlyphMap(self) -> dict[str, list[int]]:
         await self._ensureGlyphMap()
@@ -410,7 +414,14 @@ class RCJKMySQLBackend:
         method = getattr(self.client, apiMethodName)
         return await method(self.fontUID, glyphInfo.glyphID, *args, **kwargs)
 
-    async def watchExternalChanges(self) -> AsyncGenerator[tuple[Any, Any], None]:
+    async def watchExternalChanges(
+        self, callback: Callable[[Any, Any], Awaitable[None]]
+    ) -> None:
+        self.watcherCallbacks.append(callback)
+        if self.watcherTask is None:
+            self.watcherTask = asyncio.create_task(self._watchExternalChangesLoop())
+
+    async def _watchExternalChangesLoop(self):
         await self._ensureGlyphMap()
         errorDelay = 30
         while True:
@@ -423,7 +434,8 @@ class RCJKMySQLBackend:
                 await asyncio.sleep(errorDelay)
             else:
                 if externalChange or reloadPattern:
-                    yield externalChange, reloadPattern
+                    for callback in self.watcherCallbacks:
+                        await callback(externalChange, reloadPattern)
 
     async def _pollOnceForChanges(self) -> tuple[Any, Any]:
         try:
