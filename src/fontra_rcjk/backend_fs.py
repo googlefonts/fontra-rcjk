@@ -7,7 +7,7 @@ from functools import cached_property
 from os import PathLike
 from typing import Any, Awaitable, Callable
 
-from fontra.backends.filewatcher import FileWatcher
+from fontra.backends.filewatcher import Change, FileWatcher
 from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
 from fontra.core.classes import (
     GlobalAxis,
@@ -241,7 +241,7 @@ class RCJKBackend:
     def _getFilesToWatch(self):
         return [self.path]
 
-    async def _fileWatcherCallback(self, changes):
+    async def _fileWatcherCallback(self, changes: set[tuple[Change, str]]) -> None:
         reloadPattern = await self.processExternalChanges(changes)
         if reloadPattern:
             for callback in self.fileWatcherCallbacks:
