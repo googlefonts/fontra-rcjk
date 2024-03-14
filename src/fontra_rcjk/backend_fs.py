@@ -85,6 +85,8 @@ class RCJKBackend:
 
         self._recentlyWrittenPaths: dict[str, Any] = {}
         self._tempGlyphCache = TimedCache()
+        self.fileWatcher: FileWatcher | None = None
+        self.fileWatcherCallbacks: list[Callable[[Any, Any], Awaitable[None]]] = []
 
     async def aclose(self):
         self._tempGlyphCache.cancel()
