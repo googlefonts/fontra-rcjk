@@ -88,7 +88,7 @@ class RCJKBackend:
         self.fileWatcher: FileWatcher | None = None
         self.fileWatcherCallbacks: list[Callable[[Any, Any], Awaitable[None]]] = []
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         self._tempGlyphCache.cancel()
         if self.fileWatcher is not None:
             await self.fileWatcher.aclose()
@@ -238,7 +238,7 @@ class RCJKBackend:
             self.fileWatcher.setPaths(self._getFilesToWatch())
         self.fileWatcherCallbacks.append(callback)
 
-    def _getFilesToWatch(self):
+    def _getFilesToWatch(self) -> list[os.PathLike | str]:
         return [self.path]
 
     async def _fileWatcherCallback(self, changes: set[tuple[Change, str]]) -> None:
