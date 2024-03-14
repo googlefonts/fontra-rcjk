@@ -458,7 +458,7 @@ class RCJKMySQLBackend:
         )
         responseData = response["data"]
         glyphNames = set()
-        haveGlyphMapUpdates: bool = False
+        haveGlyphMapUpdates = False
         latestTimeStamp = ""  # less than any timestamp string
 
         for glyphInfo in responseData.get("deleted_glifs", []):
