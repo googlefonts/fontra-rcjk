@@ -26,7 +26,8 @@ from .base import (
     buildLayerGlyphsFromVariableGlyph,
     buildVariableGlyphFromLayerGlyphs,
     standardCustomDataItems,
-    unpackAxes,
+    structureDesignspaceData,
+    unstructureDesignspaceData,
 )
 
 logger = logging.getLogger(__name__)
@@ -122,8 +123,8 @@ class RCJKMySQLBackend:
 
             async def taskFunc():
                 font_data = await self.client.font_get(self.fontUID)
-                self._tempFontItemsCache["designspace"] = font_data["data"].get(
-                    "designspace", {}
+                self._tempFontItemsCache["designspace"] = structureDesignspaceData(
+                    font_data["data"].get("designspace", {})
                 )
                 self._tempFontItemsCache["customData"] = (
                     font_data["data"].get("fontlib", {}) | standardCustomDataItems
@@ -147,21 +148,26 @@ class RCJKMySQLBackend:
         pass
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
-        axes = self._tempFontItemsCache.get("axes")
-        if axes is None:
+        designspace = self._tempFontItemsCache.get("axes")
+        if designspace is None:
             await self._getMiscFontItems()
             designspace = self._tempFontItemsCache["designspace"]
-            axes = unpackAxes(designspace.get("axes", ()))
-            self._tempFontItemsCache["axes"] = axes
-            userLoc = {axis.name: axis.defaultValue for axis in axes}
-            self._defaultLocation = mapLocationFromUserToSource(userLoc, axes)
-        return axes
+            userLoc = {axis.name: axis.defaultValue for axis in designspace.axes}
+            self._defaultLocation = mapLocationFromUserToSource(
+                userLoc, designspace.axes
+            )
+        return deepcopy(designspace.axes)
 
     async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
         await self._getMiscFontItems()
         designspace = self._tempFontItemsCache["designspace"]
-        designspace["axes"] = unstructure(axes)
-        _ = await self.client.font_update(self.fontUID, designspace=designspace)
+        designspace.axes = deepcopy(axes)
+        await self._writeDesignspaceData(designspace)
+
+    async def _writeDesignspaceData(self, designspace) -> None:
+        _ = await self.client.font_update(
+            self.fontUID, designspace=unstructureDesignspaceData(designspace)
+        )
 
     async def getDefaultLocation(self) -> dict[str, float]:
         if self._defaultLocation is None:
