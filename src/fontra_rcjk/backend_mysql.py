@@ -9,6 +9,7 @@ from random import random
 from typing import Any, Awaitable, Callable
 
 from fontra.core.classes import (
+    Font,
     FontInfo,
     GlobalAxis,
     GlobalDiscreteAxis,
@@ -135,7 +136,7 @@ class RCJKMySQLBackend:
             self._getMiscFontItemsTask = asyncio.create_task(taskFunc())
         await self._getMiscFontItemsTask
 
-    async def _getDesignspace(self):
+    async def _getDesignspace(self) -> Font:
         await self._getMiscFontItems()
         designspace = self._tempFontItemsCache["designspace"]
         self._updateDefaultLocation(designspace)
@@ -146,23 +147,28 @@ class RCJKMySQLBackend:
         self._defaultLocation = mapLocationFromUserToSource(userLoc, designspace.axes)
 
     async def getFontInfo(self) -> FontInfo:
-        return FontInfo()
+        designspace = await self._getDesignspace()
+        return deepcopy(designspace.fontInfo)
 
     async def putFontInfo(self, fontInfo: FontInfo):
-        pass
+        designspace = await self._getDesignspace()
+        designspace.fontInfo = deepcopy(fontInfo)
+        await self._writeDesignspace(designspace)
 
     async def getSources(self) -> dict[str, GlobalSource]:
-        return {}
+        designspace = await self._getDesignspace()
+        return deepcopy(designspace.sources)
 
     async def putSources(self, sources: dict[str, GlobalSource]) -> None:
-        pass
+        designspace = await self._getDesignspace()
+        designspace.sources = deepcopy(sources)
+        await self._writeDesignspace(designspace)
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
         designspace = await self._getDesignspace()
         return deepcopy(designspace.axes)
 
     async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
-        await self._getMiscFontItems()
         designspace = await self._getDesignspace()
         designspace.axes = deepcopy(axes)
         self._updateDefaultLocation(designspace)
