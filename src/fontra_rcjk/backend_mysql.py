@@ -166,9 +166,9 @@ class RCJKMySQLBackend:
         designspace = self._getDesignspace()
         designspace.axes = deepcopy(axes)
         self._updateDefaultLocation(designspace)
-        await self._writeDesignspaceData(designspace)
+        await self._writeDesignspace(designspace)
 
-    async def _writeDesignspaceData(self, designspace) -> None:
+    async def _writeDesignspace(self, designspace) -> None:
         _ = await self.client.font_update(
             self.fontUID, designspace=unstructureDesignspaceData(designspace)
         )
