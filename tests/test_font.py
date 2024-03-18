@@ -1013,3 +1013,10 @@ async def test_deleteGlyphRaisesKeyError(writableTestFont):
     async with contextlib.aclosing(writableTestFont):
         with pytest.raises(KeyError, match="Glyph 'A.doesnotexist' does not exist"):
             await writableTestFont.deleteGlyph(glyphName)
+
+
+async def test_putUnitsPerEm(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
+        assert 1000 == await writableTestFont.getUnitsPerEm()
+        await writableTestFont.putUnitsPerEm(2000)
+        assert 2000 == await writableTestFont.getUnitsPerEm()

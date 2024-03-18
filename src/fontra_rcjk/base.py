@@ -3,11 +3,12 @@ import hashlib
 from copy import deepcopy
 from dataclasses import asdict
 from functools import cached_property
-from typing import Union
+from typing import Any, Union
 
 from fontra.backends.designspace import cleanupTransform
 from fontra.core.classes import (
     Component,
+    Font,
     GlobalAxis,
     GlobalDiscreteAxis,
     Layer,
@@ -16,6 +17,7 @@ from fontra.core.classes import (
     StaticGlyph,
     VariableGlyph,
     structure,
+    unstructure,
 )
 from fontra.core.path import PackedPathPointPen
 from fontTools.misc.transform import DecomposedTransform
@@ -482,6 +484,25 @@ standardCustomDataItems = {
         },
     ]
 }
+
+
+def structureDesignspaceData(designspaceData: dict[str, Any]) -> Font:
+    designspaceData = {
+        **designspaceData,
+        "axes": updateAxes(designspaceData.get("axes", [])),
+    }
+    return structure(designspaceData, Font)
+
+
+def unstructureDesignspaceData(designspace: Font) -> dict[str, Any]:
+    designspaceData = unstructure(designspace)
+    del designspaceData["glyphs"]
+    del designspaceData["glyphMap"]
+    return designspaceData
+
+
+def updateAxes(axisList):
+    return unstructure(unpackAxes(axisList))
 
 
 def unpackAxes(dsAxes):

@@ -9,8 +9,11 @@ from random import random
 from typing import Any, Awaitable, Callable
 
 from fontra.core.classes import (
+    Font,
+    FontInfo,
     GlobalAxis,
     GlobalDiscreteAxis,
+    GlobalSource,
     VariableGlyph,
     structure,
     unstructure,
@@ -24,7 +27,8 @@ from .base import (
     buildLayerGlyphsFromVariableGlyph,
     buildVariableGlyphFromLayerGlyphs,
     standardCustomDataItems,
-    unpackAxes,
+    structureDesignspaceData,
+    unstructureDesignspaceData,
 )
 
 logger = logging.getLogger(__name__)
@@ -120,8 +124,8 @@ class RCJKMySQLBackend:
 
             async def taskFunc():
                 font_data = await self.client.font_get(self.fontUID)
-                self._tempFontItemsCache["designspace"] = font_data["data"].get(
-                    "designspace", {}
+                self._tempFontItemsCache["designspace"] = structureDesignspaceData(
+                    font_data["data"].get("designspace", {})
                 )
                 self._tempFontItemsCache["customData"] = (
                     font_data["data"].get("fontlib", {}) | standardCustomDataItems
@@ -132,22 +136,48 @@ class RCJKMySQLBackend:
             self._getMiscFontItemsTask = asyncio.create_task(taskFunc())
         await self._getMiscFontItemsTask
 
-    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
-        axes = self._tempFontItemsCache.get("axes")
-        if axes is None:
-            await self._getMiscFontItems()
-            designspace = self._tempFontItemsCache["designspace"]
-            axes = unpackAxes(designspace.get("axes", ()))
-            self._tempFontItemsCache["axes"] = axes
-            userLoc = {axis.name: axis.defaultValue for axis in axes}
-            self._defaultLocation = mapLocationFromUserToSource(userLoc, axes)
-        return axes
-
-    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
+    async def _getDesignspace(self) -> Font:
         await self._getMiscFontItems()
         designspace = self._tempFontItemsCache["designspace"]
-        designspace["axes"] = unstructure(axes)
-        _ = await self.client.font_update(self.fontUID, designspace=designspace)
+        self._updateDefaultLocation(designspace)
+        return designspace
+
+    def _updateDefaultLocation(self, designspace):
+        userLoc = {axis.name: axis.defaultValue for axis in designspace.axes}
+        self._defaultLocation = mapLocationFromUserToSource(userLoc, designspace.axes)
+
+    async def getFontInfo(self) -> FontInfo:
+        designspace = await self._getDesignspace()
+        return deepcopy(designspace.fontInfo)
+
+    async def putFontInfo(self, fontInfo: FontInfo):
+        designspace = await self._getDesignspace()
+        designspace.fontInfo = deepcopy(fontInfo)
+        await self._writeDesignspace(designspace)
+
+    async def getSources(self) -> dict[str, GlobalSource]:
+        designspace = await self._getDesignspace()
+        return deepcopy(designspace.sources)
+
+    async def putSources(self, sources: dict[str, GlobalSource]) -> None:
+        designspace = await self._getDesignspace()
+        designspace.sources = deepcopy(sources)
+        await self._writeDesignspace(designspace)
+
+    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
+        designspace = await self._getDesignspace()
+        return deepcopy(designspace.axes)
+
+    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
+        designspace = await self._getDesignspace()
+        designspace.axes = deepcopy(axes)
+        self._updateDefaultLocation(designspace)
+        await self._writeDesignspace(designspace)
+
+    async def _writeDesignspace(self, designspace) -> None:
+        _ = await self.client.font_update(
+            self.fontUID, designspace=unstructureDesignspaceData(designspace)
+        )
 
     async def getDefaultLocation(self) -> dict[str, float]:
         if self._defaultLocation is None:
@@ -156,10 +186,13 @@ class RCJKMySQLBackend:
         return self._defaultLocation
 
     async def getUnitsPerEm(self) -> int:
-        return 1000
+        designspace = await self._getDesignspace()
+        return designspace.unitsPerEm
 
     async def putUnitsPerEm(self, value: int) -> None:
-        pass
+        designspace = await self._getDesignspace()
+        designspace.unitsPerEm = value
+        await self._writeDesignspace(designspace)
 
     async def getCustomData(self) -> dict[str, Any]:
         customData = self._tempFontItemsCache.get("customData")
