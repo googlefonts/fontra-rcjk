@@ -148,9 +148,9 @@ class RCJKBackend:
         self.designspace.axes = deepcopy(axes)
         if hasattr(self, "_defaultLocation"):
             del self._defaultLocation
-        self._writeDesignSpaceFile()
+        self._writeDesignspace()
 
-    def _writeDesignSpaceFile(self):
+    def _writeDesignspace(self):
         designspacePath = self.path / DS_FILENAME
         designspacePath.write_text(
             json.dumps(unstructureDesignspaceData(self.designspace), indent=2),
