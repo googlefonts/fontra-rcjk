@@ -10,8 +10,10 @@ from typing import Any, Awaitable, Callable
 from fontra.backends.filewatcher import Change, FileWatcher
 from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
 from fontra.core.classes import (
+    FontInfo,
     GlobalAxis,
     GlobalDiscreteAxis,
+    GlobalSource,
     VariableGlyph,
     unstructure,
 )
@@ -124,6 +126,18 @@ class RCJKBackend:
         return dict(self._glyphMap)
 
     async def putGlyphMap(self, glyphMap: dict[str, list[int]]) -> None:
+        pass
+
+    async def getFontInfo(self) -> FontInfo:
+        return FontInfo()
+
+    async def putFontInfo(self, fontInfo: FontInfo):
+        pass
+
+    async def getSources(self) -> dict[str, GlobalSource]:
+        return {}
+
+    async def putSources(self, sources: dict[str, GlobalSource]) -> None:
         pass
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:

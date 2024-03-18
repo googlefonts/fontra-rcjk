@@ -9,8 +9,10 @@ from random import random
 from typing import Any, Awaitable, Callable
 
 from fontra.core.classes import (
+    FontInfo,
     GlobalAxis,
     GlobalDiscreteAxis,
+    GlobalSource,
     VariableGlyph,
     structure,
     unstructure,
@@ -131,6 +133,18 @@ class RCJKMySQLBackend:
 
             self._getMiscFontItemsTask = asyncio.create_task(taskFunc())
         await self._getMiscFontItemsTask
+
+    async def getFontInfo(self) -> FontInfo:
+        return FontInfo()
+
+    async def putFontInfo(self, fontInfo: FontInfo):
+        pass
+
+    async def getSources(self) -> dict[str, GlobalSource]:
+        return {}
+
+    async def putSources(self, sources: dict[str, GlobalSource]) -> None:
+        pass
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
         axes = self._tempFontItemsCache.get("axes")
