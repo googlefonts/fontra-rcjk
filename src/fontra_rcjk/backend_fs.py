@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 import shutil
+from copy import deepcopy
 from functools import cached_property
 from os import PathLike
 from typing import Any, Awaitable, Callable
@@ -10,12 +11,12 @@ from typing import Any, Awaitable, Callable
 from fontra.backends.filewatcher import Change, FileWatcher
 from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
 from fontra.core.classes import (
+    Font,
     FontInfo,
     GlobalAxis,
     GlobalDiscreteAxis,
     GlobalSource,
     VariableGlyph,
-    unstructure,
 )
 from fontra.core.instancer import mapLocationFromUserToSource
 from fontra.core.protocols import WritableFontBackend
@@ -27,7 +28,8 @@ from .base import (
     buildLayerGlyphsFromVariableGlyph,
     buildVariableGlyphFromLayerGlyphs,
     standardCustomDataItems,
-    unpackAxes,
+    structureDesignspaceData,
+    unstructureDesignspaceData,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,9 +74,11 @@ class RCJKBackend:
 
         designspacePath = self.path / DS_FILENAME
         if designspacePath.is_file():
-            self.designspace = json.loads(designspacePath.read_text(encoding="utf-8"))
+            self.designspace = structureDesignspaceData(
+                json.loads(designspacePath.read_text(encoding="utf-8"))
+            )
         else:
-            self.designspace = {}
+            self.designspace = Font()
 
         self._glyphMap: dict[str, list[int]] = {}
         for gs, hasEncoding in self._iterGlyphSets():
@@ -115,11 +119,8 @@ class RCJKBackend:
 
     @cached_property
     def _defaultLocation(self):
-        axes = unpackAxes(self.designspace.get("axes", ()))
-        userLoc = {
-            axis["name"]: axis["defaultValue"]
-            for axis in self.designspace.get("axes", ())
-        }
+        axes = self.designspace.axes
+        userLoc = {axis.name: axis.defaultValue for axis in axes}
         return mapLocationFromUserToSource(userLoc, axes)
 
     async def getGlyphMap(self) -> dict[str, list[int]]:
@@ -141,10 +142,10 @@ class RCJKBackend:
         pass
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
-        return unpackAxes(self.designspace.get("axes", ()))
+        return deepcopy(self.designspace.axes)
 
     async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
-        self.designspace["axes"] = unstructure(axes)
+        self.designspace.axes = deepcopy(axes)
         if hasattr(self, "_defaultLocation"):
             del self._defaultLocation
         self._writeDesignSpaceFile()
@@ -152,7 +153,8 @@ class RCJKBackend:
     def _writeDesignSpaceFile(self):
         designspacePath = self.path / DS_FILENAME
         designspacePath.write_text(
-            json.dumps(self.designspace, indent=2), encoding="utf-8"
+            json.dumps(unstructureDesignspaceData(self.designspace), indent=2),
+            encoding="utf-8",
         )
 
     async def getUnitsPerEm(self) -> int:
