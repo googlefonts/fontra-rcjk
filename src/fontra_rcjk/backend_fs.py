@@ -130,16 +130,18 @@ class RCJKBackend:
         pass
 
     async def getFontInfo(self) -> FontInfo:
-        return FontInfo()
+        return deepcopy(self.designspace.fontInfo)
 
     async def putFontInfo(self, fontInfo: FontInfo):
-        pass
+        self.designspace.fontInfo = deepcopy(fontInfo)
+        self._writeDesignspace()
 
     async def getSources(self) -> dict[str, GlobalSource]:
-        return {}
+        return deepcopy(self.designspace.sources)
 
     async def putSources(self, sources: dict[str, GlobalSource]) -> None:
-        pass
+        self.designspace.sources = deepcopy(sources)
+        self._writeDesignspace()
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
         return deepcopy(self.designspace.axes)

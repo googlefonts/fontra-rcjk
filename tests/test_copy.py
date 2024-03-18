@@ -19,6 +19,8 @@ async def test_copy_font(tmpdir):
         async with aclosing(dupedFont):
             glyphMap = await srcFont.getGlyphMap()
             assert glyphMap == await dupedFont.getGlyphMap()
+            assert await srcFont.getFontInfo() == await dupedFont.getFontInfo()
+            assert await srcFont.getSources() == await dupedFont.getSources()
             assert await srcFont.getGlobalAxes() == await dupedFont.getGlobalAxes()
             assert await srcFont.getCustomData() == await dupedFont.getCustomData()
             for glyphName in glyphMap:
