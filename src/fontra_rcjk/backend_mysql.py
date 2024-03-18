@@ -180,10 +180,13 @@ class RCJKMySQLBackend:
         return self._defaultLocation
 
     async def getUnitsPerEm(self) -> int:
-        return 1000
+        designspace = await self._getDesignspace()
+        return designspace.unitsPerEm
 
     async def putUnitsPerEm(self, value: int) -> None:
-        pass
+        designspace = await self._getDesignspace()
+        designspace.unitsPerEm = value
+        await self._writeDesignspace(designspace)
 
     async def getCustomData(self) -> dict[str, Any]:
         customData = self._tempFontItemsCache.get("customData")
