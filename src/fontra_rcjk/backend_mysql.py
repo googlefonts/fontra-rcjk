@@ -135,6 +135,16 @@ class RCJKMySQLBackend:
             self._getMiscFontItemsTask = asyncio.create_task(taskFunc())
         await self._getMiscFontItemsTask
 
+    async def _getDesignspace(self):
+        await self._getMiscFontItems()
+        designspace = self._tempFontItemsCache["designspace"]
+        self._updateDefaultLocation(designspace)
+        return designspace
+
+    def _updateDefaultLocation(self, designspace):
+        userLoc = {axis.name: axis.defaultValue for axis in designspace.axes}
+        self._defaultLocation = mapLocationFromUserToSource(userLoc, designspace.axes)
+
     async def getFontInfo(self) -> FontInfo:
         return FontInfo()
 
@@ -148,20 +158,14 @@ class RCJKMySQLBackend:
         pass
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
-        designspace = self._tempFontItemsCache.get("axes")
-        if designspace is None:
-            await self._getMiscFontItems()
-            designspace = self._tempFontItemsCache["designspace"]
-            userLoc = {axis.name: axis.defaultValue for axis in designspace.axes}
-            self._defaultLocation = mapLocationFromUserToSource(
-                userLoc, designspace.axes
-            )
+        designspace = self._getDesignspace()
         return deepcopy(designspace.axes)
 
     async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
         await self._getMiscFontItems()
-        designspace = self._tempFontItemsCache["designspace"]
+        designspace = self._getDesignspace()
         designspace.axes = deepcopy(axes)
+        self._updateDefaultLocation(designspace)
         await self._writeDesignspaceData(designspace)
 
     async def _writeDesignspaceData(self, designspace) -> None:
