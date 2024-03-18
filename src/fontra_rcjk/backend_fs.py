@@ -158,10 +158,11 @@ class RCJKBackend:
         )
 
     async def getUnitsPerEm(self) -> int:
-        return 1000
+        return self.designspace.unitsPerEm
 
     async def putUnitsPerEm(self, value: int) -> None:
-        pass
+        self.designspace.unitsPerEm = value
+        self._writeDesignspace()
 
     async def getGlyph(self, glyphName: str) -> VariableGlyph | None:
         try:
