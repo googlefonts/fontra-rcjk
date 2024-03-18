@@ -158,12 +158,12 @@ class RCJKMySQLBackend:
         pass
 
     async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
-        designspace = self._getDesignspace()
+        designspace = await self._getDesignspace()
         return deepcopy(designspace.axes)
 
     async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
         await self._getMiscFontItems()
-        designspace = self._getDesignspace()
+        designspace = await self._getDesignspace()
         designspace.axes = deepcopy(axes)
         self._updateDefaultLocation(designspace)
         await self._writeDesignspace(designspace)
