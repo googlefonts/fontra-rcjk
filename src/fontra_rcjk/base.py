@@ -201,6 +201,9 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs) -> VariableGlyph:
             layerGlyph.components += components
 
         location = varDict["location"]
+        location = {
+            k: float(v) if isinstance(v, str) else v for k, v in location.items()
+        }
         sources.append(
             Source(
                 name=sourceName,
