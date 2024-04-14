@@ -9,11 +9,10 @@ from random import random
 from typing import Any, Awaitable, Callable
 
 from fontra.core.classes import (
+    Axes,
     Font,
     FontInfo,
-    GlobalAxis,
-    GlobalDiscreteAxis,
-    GlobalSource,
+    FontSource,
     VariableGlyph,
     structure,
     unstructure,
@@ -143,8 +142,10 @@ class RCJKMySQLBackend:
         return designspace
 
     def _updateDefaultLocation(self, designspace):
-        userLoc = {axis.name: axis.defaultValue for axis in designspace.axes}
-        self._defaultLocation = mapLocationFromUserToSource(userLoc, designspace.axes)
+        userLoc = {axis.name: axis.defaultValue for axis in designspace.axes.axes}
+        self._defaultLocation = mapLocationFromUserToSource(
+            userLoc, designspace.axes.axes
+        )
 
     async def getFontInfo(self) -> FontInfo:
         designspace = await self._getDesignspace()
@@ -155,20 +156,20 @@ class RCJKMySQLBackend:
         designspace.fontInfo = deepcopy(fontInfo)
         await self._writeDesignspace(designspace)
 
-    async def getSources(self) -> dict[str, GlobalSource]:
+    async def getSources(self) -> dict[str, FontSource]:
         designspace = await self._getDesignspace()
         return deepcopy(designspace.sources)
 
-    async def putSources(self, sources: dict[str, GlobalSource]) -> None:
+    async def putSources(self, sources: dict[str, FontSource]) -> None:
         designspace = await self._getDesignspace()
         designspace.sources = deepcopy(sources)
         await self._writeDesignspace(designspace)
 
-    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
+    async def getAxes(self) -> Axes:
         designspace = await self._getDesignspace()
         return deepcopy(designspace.axes)
 
-    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
+    async def putAxes(self, axes: Axes) -> None:
         designspace = await self._getDesignspace()
         designspace.axes = deepcopy(axes)
         self._updateDefaultLocation(designspace)
@@ -181,7 +182,7 @@ class RCJKMySQLBackend:
 
     async def getDefaultLocation(self) -> dict[str, float]:
         if self._defaultLocation is None:
-            _ = await self.getGlobalAxes()
+            _ = await self.getAxes()
         assert self._defaultLocation is not None
         return self._defaultLocation
 

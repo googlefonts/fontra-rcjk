@@ -15,11 +15,11 @@
       <array>
         <dict>
           <key>defaultValue</key>
-          <real>0.0</real>
+          <integer>0</integer>
           <key>maxValue</key>
-          <real>1.0</real>
+          <integer>1</integer>
           <key>minValue</key>
-          <real>0.0</real>
+          <integer>0</integer>
           <key>name</key>
           <string>wght</string>
         </dict>
