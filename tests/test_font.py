@@ -5,11 +5,12 @@ from importlib.metadata import entry_points
 
 import pytest
 from fontra.core.classes import (
-    GlobalAxis,
+    Axes,
+    FontAxis,
+    GlyphAxis,
+    GlyphSource,
     Layer,
-    LocalAxis,
     PackedPath,
-    Source,
     StaticGlyph,
     VariableGlyph,
     structure,
@@ -415,25 +416,27 @@ async def test_getGlyphUnknownGlyph():
 getGlobalAxesTestData = [
     (
         "rcjk",
-        [
-            GlobalAxis(
-                label="Weight",
-                name="wght",
-                tag="wght",
-                minValue=400,
-                defaultValue=400,
-                maxValue=700,
-            ),
-        ],
+        Axes(
+            axes=[
+                FontAxis(
+                    label="Weight",
+                    name="wght",
+                    tag="wght",
+                    minValue=400,
+                    defaultValue=400,
+                    maxValue=700,
+                ),
+            ]
+        ),
     ),
 ]
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("backendName, expectedGlobalAxes", getGlobalAxesTestData)
-async def test_getGlobalAxes(backendName, expectedGlobalAxes):
+async def test_getAxes(backendName, expectedGlobalAxes):
     font = getTestFont(backendName)
-    globalAxes = await font.getGlobalAxes()
+    globalAxes = await font.getAxes()
     assert expectedGlobalAxes == globalAxes
 
 
@@ -674,10 +677,10 @@ async def test_new_glyph(writableTestFont):
     async with contextlib.aclosing(writableTestFont):
         glyph = VariableGlyph(
             name="b",
-            axes=[LocalAxis(name="wght", minValue=100, defaultValue=400, maxValue=700)],
+            axes=[GlyphAxis(name="wght", minValue=100, defaultValue=400, maxValue=700)],
             sources=[
-                Source(name="default", layerName="default"),
-                Source(name="bold", layerName="bold"),
+                GlyphSource(name="default", layerName="default"),
+                GlyphSource(name="bold", layerName="bold"),
             ],
             layers={
                 "default": Layer(glyph=StaticGlyph(path=makeTestPath())),
@@ -701,7 +704,7 @@ async def test_add_new_layer(writableTestFont):
         layerPath = writableTestFont.path / "characterGlyph" / newLayerName
         assert not layerPath.exists()
 
-        glyph.sources.append(Source(name=newLayerName, layerName=newLayerName))
+        glyph.sources.append(GlyphSource(name=newLayerName, layerName=newLayerName))
         glyph.layers[newLayerName] = Layer(
             glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
         )
@@ -817,7 +820,7 @@ async def test_bad_layer_name(writableTestFont):
             layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
             assert not layerPath.exists()
 
-            glyph.sources.append(Source(name=badLayerName, layerName=badLayerName))
+            glyph.sources.append(GlyphSource(name=badLayerName, layerName=badLayerName))
             glyph.layers[badLayerName] = Layer(
                 glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
             )

@@ -1,19 +1,18 @@
 import asyncio
 import hashlib
 from copy import deepcopy
-from dataclasses import asdict
 from functools import cached_property
 from typing import Any, Union
 
 from fontra.backends.designspace import cleanupTransform
 from fontra.core.classes import (
     Component,
+    DiscreteFontAxis,
     Font,
-    GlobalAxis,
-    GlobalDiscreteAxis,
+    FontAxis,
+    GlyphAxis,
+    GlyphSource,
     Layer,
-    LocalAxis,
-    Source,
     StaticGlyph,
     VariableGlyph,
     structure,
@@ -117,7 +116,7 @@ def cleanupAxis(axisDict):
     axisDict["minValue"] = minValue
     axisDict["defaultValue"] = defaultValue
     axisDict["maxValue"] = maxValue
-    return LocalAxis(**axisDict)
+    return GlyphAxis(**axisDict)
 
 
 def buildVariableGlyphFromLayerGlyphs(layerGlyphs) -> VariableGlyph:
@@ -138,7 +137,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs) -> VariableGlyph:
     dcNames = [c.name for c in defaultComponents]
 
     sources = [
-        Source(
+        GlyphSource(
             name="<default>",
             layerName="foreground",
             customData={FONTRA_STATUS_KEY: defaultGlyph.lib.get("robocjk.status", 0)},
@@ -205,7 +204,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs) -> VariableGlyph:
             k: float(v) if isinstance(v, str) else v for k, v in location.items()
         }
         sources.append(
-            Source(
+            GlyphSource(
                 name=sourceName,
                 location=location,
                 layerName=fontraLayerNameMapping.get(layerName, layerName),
@@ -293,7 +292,7 @@ def buildLayerGlyphsFromVariableGlyph(
     defaultGlyph = layerGlyphs["foreground"]
 
     if glyph.axes:
-        defaultGlyph.lib["robocjk.axes"] = [asdict(axis) for axis in glyph.axes]
+        defaultGlyph.lib["robocjk.axes"] = [unstructure(axis) for axis in glyph.axes]
     else:
         defaultGlyph.lib.pop("robocjk.axes", None)
 
@@ -490,10 +489,10 @@ standardCustomDataItems = {
 
 
 def structureDesignspaceData(designspaceData: dict[str, Any]) -> Font:
-    designspaceData = {
-        **designspaceData,
-        "axes": updateAxes(designspaceData.get("axes", [])),
-    }
+    if isinstance(designspaceData.get("axes"), list):
+        # old format
+        designspaceData = deepcopy(designspaceData)
+        designspaceData["axes"] = updateAxes(designspaceData["axes"])
     return structure(designspaceData, Font)
 
 
@@ -514,9 +513,9 @@ def unpackAxes(dsAxes):
 
 def _unpackDSAxis(dsAxis):
     if "label" in dsAxis:
-        return structure(dsAxis, Union[GlobalAxis, GlobalDiscreteAxis])
+        return structure(dsAxis, Union[FontAxis, DiscreteFontAxis])
     # Legacy rcjk ds data
-    return GlobalAxis(
+    return FontAxis(
         label=dsAxis["name"],
         name=dsAxis["tag"],
         tag=dsAxis["tag"],

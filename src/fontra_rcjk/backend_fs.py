@@ -10,14 +10,7 @@ from typing import Any, Awaitable, Callable
 
 from fontra.backends.filewatcher import Change, FileWatcher
 from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
-from fontra.core.classes import (
-    Font,
-    FontInfo,
-    GlobalAxis,
-    GlobalDiscreteAxis,
-    GlobalSource,
-    VariableGlyph,
-)
+from fontra.core.classes import Axes, Font, FontInfo, FontSource, VariableGlyph
 from fontra.core.instancer import mapLocationFromUserToSource
 from fontra.core.protocols import WritableFontBackend
 from fontTools.ufoLib.filenames import userNameToFileName
@@ -119,7 +112,7 @@ class RCJKBackend:
 
     @cached_property
     def _defaultLocation(self):
-        axes = self.designspace.axes
+        axes = self.designspace.axes.axes
         userLoc = {axis.name: axis.defaultValue for axis in axes}
         return mapLocationFromUserToSource(userLoc, axes)
 
@@ -136,17 +129,17 @@ class RCJKBackend:
         self.designspace.fontInfo = deepcopy(fontInfo)
         self._writeDesignspace()
 
-    async def getSources(self) -> dict[str, GlobalSource]:
+    async def getSources(self) -> dict[str, FontSource]:
         return deepcopy(self.designspace.sources)
 
-    async def putSources(self, sources: dict[str, GlobalSource]) -> None:
+    async def putSources(self, sources: dict[str, FontSource]) -> None:
         self.designspace.sources = deepcopy(sources)
         self._writeDesignspace()
 
-    async def getGlobalAxes(self) -> list[GlobalAxis | GlobalDiscreteAxis]:
+    async def getAxes(self) -> Axes:
         return deepcopy(self.designspace.axes)
 
-    async def putGlobalAxes(self, axes: list[GlobalAxis | GlobalDiscreteAxis]) -> None:
+    async def putAxes(self, axes: Axes) -> None:
         self.designspace.axes = deepcopy(axes)
         if hasattr(self, "_defaultLocation"):
             del self._defaultLocation
