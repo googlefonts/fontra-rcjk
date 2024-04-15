@@ -85,7 +85,7 @@ class RCJKProjectManager:
         if token is not None and token in self.authorizedClients:
             client = self.authorizedClients.pop(token)
             logger.info(f"logging out '{client.username}'")
-            await client.close()
+            await client.aclose()
         raise web.HTTPFound("/")
 
     async def authorize(self, request: web.Request) -> str | None:
