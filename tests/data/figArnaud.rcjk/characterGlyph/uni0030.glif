@@ -11,19 +11,6 @@
     <dict>
       <key>public.markColor</key>
       <string>1,0,0,1</string>
-      <key>robocjk.axes</key>
-      <array>
-        <dict>
-          <key>defaultValue</key>
-          <integer>0</integer>
-          <key>maxValue</key>
-          <integer>1</integer>
-          <key>minValue</key>
-          <integer>0</integer>
-          <key>name</key>
-          <string>wght</string>
-        </dict>
-      </array>
       <key>robocjk.deepComponents</key>
       <array>
         <dict>
@@ -96,7 +83,7 @@
           <key>location</key>
           <dict>
             <key>wght</key>
-            <real>1.0</real>
+            <real>700.0</real>
           </dict>
           <key>on</key>
           <true/>

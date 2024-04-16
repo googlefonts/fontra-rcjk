@@ -256,8 +256,11 @@ class RCJKMySQLBackend:
             return None
         glyph = self._readGlyphFromCacheDir(glyphName)
         if glyph is None:
+            designspace = await self._getDesignspace()
             layerGlyphs = await self._getLayerGlyphs(glyphName)
-            glyph = buildVariableGlyphFromLayerGlyphs(layerGlyphs)
+            glyph = buildVariableGlyphFromLayerGlyphs(
+                layerGlyphs, designspace.axes.axes
+            )
             self._writeGlyphToCacheDir(glyphName, glyph)
         return glyph
 
