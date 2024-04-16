@@ -164,7 +164,9 @@ class RCJKBackend:
             layerGlyphs = self._getLayerGlyphs(glyphName)
         except KeyError:
             return None
-        return buildVariableGlyphFromLayerGlyphs(layerGlyphs)
+        return buildVariableGlyphFromLayerGlyphs(
+            layerGlyphs, self.designspace.axes.axes
+        )
 
     def _getLayerGlyphs(self, glyphName):
         layerGlyphs = self._tempGlyphCache.get(glyphName)

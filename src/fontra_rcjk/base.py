@@ -22,6 +22,7 @@ from fontra.core.path import PackedPathPointPen
 from fontTools.misc.transform import DecomposedTransform
 from fontTools.ufoLib.filenames import illegalCharacters
 from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
+from fontTools.varLib.models import piecewiseLinearMap
 
 FONTRA_STATUS_KEY = "fontra.development.status"
 
@@ -119,7 +120,7 @@ def cleanupAxis(axisDict):
     return GlyphAxis(**axisDict)
 
 
-def buildVariableGlyphFromLayerGlyphs(layerGlyphs) -> VariableGlyph:
+def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
     layers = {
         layerName: Layer(glyph=glyph.toStaticGlyph())
         for layerName, glyph in layerGlyphs.items()
@@ -219,12 +220,51 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs) -> VariableGlyph:
             for layerName, layer in layers.items()
         }
 
-    return VariableGlyph(
+    glyph = VariableGlyph(
         name=defaultGlyph.name,
         axes=defaultGlyph.axes,
         sources=sources,
         layers=layers,
     )
+
+    if not defaultGlyph.lib.get("robocjk.localAxes.behavior.2024", False):
+        upconvertShadowAxes(glyph, fontAxes)
+
+    return glyph
+
+
+def upconvertShadowAxes(glyph, fontAxes):
+    fontAxisNames = {axis.name for axis in fontAxes}
+    glyphAxisNames = {axis.name for axis in glyph.axes}
+    if fontAxisNames.isdisjoint(glyphAxisNames):
+        return
+
+    glyphAxesByName = {axis.name: axis for axis in glyph.axes}
+
+    for fontAxis in fontAxes:
+        axisName = fontAxis.name
+        fontAxisTuple = (fontAxis.minValue, fontAxis.defaultValue, fontAxis.maxValue)
+        if fontAxis.mapping:
+            mapping = dict(fontAxis.mapping)
+            fontAxisTuple = tuple(piecewiseLinearMap(v, mapping) for v in fontAxisTuple)
+
+        glyphAxis = glyphAxesByName.get(axisName)
+        if glyphAxis is None:
+            continue
+
+        mapping = dict(
+            zip(
+                [glyphAxis.minValue, glyphAxis.defaultValue, glyphAxis.maxValue],
+                fontAxisTuple,
+            )
+        )
+
+        for source in glyph.sources:
+            v = source.location.get(axisName)
+            if v is not None:
+                source.location[axisName] = piecewiseLinearMap(v, mapping)
+
+    glyph.axes = [axis for axis in glyph.axes if axis.name not in fontAxisNames]
 
 
 def buildVariableComponentsFromLibComponents(deepComponents, dcNames):
@@ -358,6 +398,9 @@ def buildLayerGlyphsFromVariableGlyph(
 
     # Get rid of legacy data
     defaultGlyph.lib.pop("fontra.layerNames", None)
+
+    # Mark that we shouldn't try to upconvert shadow axes
+    defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
 
     return layerGlyphs
 

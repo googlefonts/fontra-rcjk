@@ -154,9 +154,7 @@ getGlyphTestData = [
     (
         "rcjk",
         {
-            "axes": [
-                {"defaultValue": 0.0, "maxValue": 1.0, "minValue": 0.0, "name": "wght"}
-            ],
+            "axes": [],
             "name": "uni0031",
             "sources": [
                 {
@@ -167,7 +165,7 @@ getGlyphTestData = [
                 },
                 {
                     "name": "wght",
-                    "location": {"wght": 1.0},
+                    "location": {"wght": 700},
                     "layerName": "wght",
                     "customData": {"fontra.development.status": 0},
                 },
@@ -482,6 +480,8 @@ glyphData_a_before = [
     "  </outline>",
     "  <lib>",
     "    <dict>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>robocjk.variationGlyphs</key>",
@@ -527,6 +527,8 @@ glyphData_a_after = [
     "  </outline>",
     "  <lib>",
     "    <dict>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>robocjk.variationGlyphs</key>",
@@ -592,6 +594,8 @@ glyphData_a_after_delete_source = [
     "  </outline>",
     "  <lib>",
     "    <dict>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>xyz.fontra.something.nothing</key>",
@@ -644,6 +648,8 @@ newGlyphTestData = [
     "          <string>wght</string>",
     "        </dict>",
     "      </array>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>robocjk.variationGlyphs</key>",
@@ -752,6 +758,8 @@ layerNameMappingTestData = [
     "  </outline>",
     "  <lib>",
     "    <dict>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>robocjk.variationGlyphs</key>",
@@ -850,6 +858,8 @@ deleteItemsTestData = [
     "    <dict>",
     "      <key>public.markColor</key>",
     "      <string>1,0,0,1</string>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>xyz.fontra.test</key>",
@@ -977,6 +987,8 @@ expectedWriteMixedComponentTestData = [
     "          </dict>",
     "        </dict>",
     "      </array>",
+    "      <key>robocjk.localAxes.behavior.2024</key>",
+    "      <true/>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "    </dict>",
