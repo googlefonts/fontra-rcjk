@@ -247,6 +247,7 @@ def upconvertShadowAxes(glyph, fontAxes):
         if fontAxis.mapping:
             mapping = dict(fontAxis.mapping)
             fontAxisTuple = tuple(piecewiseLinearMap(v, mapping) for v in fontAxisTuple)
+
         glyphAxis = glyphAxesByName.get(axisName)
         if glyphAxis is None:
             continue
