@@ -42,6 +42,8 @@
           </dict>
         </dict>
       </array>
+      <key>robocjk.localAxes.behavior.2024</key>
+      <true/>
       <key>robocjk.status</key>
       <integer>0</integer>
       <key>robocjk.variationGlyphs</key>
