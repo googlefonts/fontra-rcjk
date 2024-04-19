@@ -154,7 +154,9 @@ getGlyphTestData = [
     (
         "rcjk",
         {
-            "axes": [],
+            "axes": [
+                {"defaultValue": 0.0, "maxValue": 1.0, "minValue": 0.0, "name": "wght"}
+            ],
             "name": "uni0031",
             "sources": [
                 {
@@ -165,7 +167,7 @@ getGlyphTestData = [
                 },
                 {
                     "name": "wght",
-                    "location": {"wght": 700},
+                    "location": {"wght": 1},
                     "layerName": "wght",
                     "customData": {"fontra.development.status": 0},
                 },
