@@ -227,8 +227,8 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
         layers=layers,
     )
 
-    if not defaultGlyph.lib.get("robocjk.localAxes.behavior.2024", False):
-        upconvertShadowAxes(glyph, fontAxes)
+    # if not defaultGlyph.lib.get("robocjk.localAxes.behavior.2024", False):
+    #     upconvertShadowAxes(glyph, fontAxes)
 
     return glyph
 
@@ -238,6 +238,8 @@ def upconvertShadowAxes(glyph, fontAxes):
     glyphAxisNames = {axis.name for axis in glyph.axes}
     if fontAxisNames.isdisjoint(glyphAxisNames):
         return
+
+    defaultLocation = {axis.name: axis.defaultValue for axis in fontAxes + glyph.axes}
 
     glyphAxesByName = {axis.name: axis for axis in glyph.axes}
 
@@ -260,7 +262,8 @@ def upconvertShadowAxes(glyph, fontAxes):
         )
 
         for source in glyph.sources:
-            v = source.location.get(axisName)
+            sourceLocation = defaultLocation | source.location
+            v = sourceLocation.get(axisName)
             if v is not None:
                 source.location[axisName] = piecewiseLinearMap(v, mapping)
 
@@ -400,7 +403,7 @@ def buildLayerGlyphsFromVariableGlyph(
     defaultGlyph.lib.pop("fontra.layerNames", None)
 
     # Mark that we shouldn't try to upconvert shadow axes
-    defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
+    # defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
 
     return layerGlyphs
 
