@@ -227,8 +227,8 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
         layers=layers,
     )
 
-    if not defaultGlyph.lib.get("robocjk.localAxes.behavior.2024", False):
-        upconvertShadowAxes(glyph, fontAxes)
+    # if not defaultGlyph.lib.get("robocjk.localAxes.behavior.2024", False):
+    #     upconvertShadowAxes(glyph, fontAxes)
 
     return glyph
 
