@@ -239,6 +239,8 @@ def upconvertShadowAxes(glyph, fontAxes):
     if fontAxisNames.isdisjoint(glyphAxisNames):
         return
 
+    defaultLocation = {axis.name: axis.defaultValue for axis in fontAxes + glyph.axes}
+
     glyphAxesByName = {axis.name: axis for axis in glyph.axes}
 
     for fontAxis in fontAxes:
@@ -260,7 +262,8 @@ def upconvertShadowAxes(glyph, fontAxes):
         )
 
         for source in glyph.sources:
-            v = source.location.get(axisName)
+            sourceLocation = defaultLocation | source.location
+            v = sourceLocation.get(axisName)
             if v is not None:
                 source.location[axisName] = piecewiseLinearMap(v, mapping)
 
