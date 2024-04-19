@@ -403,7 +403,7 @@ def buildLayerGlyphsFromVariableGlyph(
     defaultGlyph.lib.pop("fontra.layerNames", None)
 
     # Mark that we shouldn't try to upconvert shadow axes
-    defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
+    # defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
 
     return layerGlyphs
 
