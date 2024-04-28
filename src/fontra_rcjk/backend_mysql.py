@@ -13,6 +13,7 @@ from fontra.core.classes import (
     Font,
     FontInfo,
     FontSource,
+    OpenTypeFeatures,
     VariableGlyph,
     structure,
     unstructure,
@@ -194,6 +195,12 @@ class RCJKMySQLBackend:
         designspace = await self._getDesignspace()
         designspace.unitsPerEm = value
         await self._writeDesignspace(designspace)
+
+    async def getFeatures(self) -> OpenTypeFeatures:
+        return OpenTypeFeatures()
+
+    async def putFeatures(self, features: OpenTypeFeatures) -> None:
+        pass
 
     async def getCustomData(self) -> dict[str, Any]:
         customData = self._tempFontItemsCache.get("customData")

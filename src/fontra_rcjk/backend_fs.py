@@ -10,7 +10,14 @@ from typing import Any, Awaitable, Callable
 
 from fontra.backends.filewatcher import Change, FileWatcher
 from fontra.backends.ufo_utils import extractGlyphNameAndCodePoints
-from fontra.core.classes import Axes, Font, FontInfo, FontSource, VariableGlyph
+from fontra.core.classes import (
+    Axes,
+    Font,
+    FontInfo,
+    FontSource,
+    OpenTypeFeatures,
+    VariableGlyph,
+)
 from fontra.core.instancer import mapLocationFromUserToSource
 from fontra.core.protocols import WritableFontBackend
 from fontTools.ufoLib.filenames import userNameToFileName
@@ -32,6 +39,7 @@ glyphSetNames = ["characterGlyph", "deepComponent", "atomicElement"]
 
 FILE_DELETED_TOKEN = object()
 DS_FILENAME = "designspace.json"
+FEA_FILENAME = "features.fea"
 FONTLIB_FILENAME = "fontLib.json"
 
 
@@ -227,6 +235,26 @@ class RCJKBackend:
                 gs.deleteGlyph(glyphName)
 
         del self._glyphMap[glyphName]
+
+    async def getFeatures(self) -> OpenTypeFeatures:
+        featuresPath = self.path / FEA_FILENAME
+        featureText = (
+            featuresPath.read_text(encoding="utf-8") if featuresPath.is_file() else ""
+        )
+        return OpenTypeFeatures(text=featureText)
+
+    async def putFeatures(self, features: OpenTypeFeatures) -> None:
+        if features.language != "fea":
+            logger.warning(
+                f"skip writing features in unsupported language: {features.language!r}"
+            )
+            return
+
+        featuresPath = self.path / FEA_FILENAME
+        if features.text:
+            featuresPath.write_text(features.text, encoding="utf-8")
+        elif featuresPath.is_file():
+            featuresPath.unlink()
 
     async def getCustomData(self) -> dict[str, Any]:
         customData = {}
