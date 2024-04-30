@@ -10,6 +10,7 @@ from fontra.core.classes import (
     GlyphAxis,
     GlyphSource,
     Layer,
+    OpenTypeFeatures,
     PackedPath,
     StaticGlyph,
     VariableGlyph,
@@ -1023,3 +1024,16 @@ async def test_putUnitsPerEm(writableTestFont):
         assert 1000 == await writableTestFont.getUnitsPerEm()
         await writableTestFont.putUnitsPerEm(2000)
         assert 2000 == await writableTestFont.getUnitsPerEm()
+
+
+async def test_getFeatures(writableTestFont):
+    font = getTestFont("rcjk")
+    features = await font.getFeatures()
+    assert "languagesystem DFLT dflt" in features.text
+
+
+async def test_putFeatures(writableTestFont):
+    featureText = "# feature text"
+    async with contextlib.aclosing(writableTestFont):
+        await writableTestFont.putFeatures(OpenTypeFeatures(text=featureText))
+        assert (await writableTestFont.getFeatures()).text == featureText

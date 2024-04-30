@@ -13,6 +13,7 @@ from fontra.core.classes import (
     Font,
     FontInfo,
     FontSource,
+    OpenTypeFeatures,
     VariableGlyph,
     structure,
     unstructure,
@@ -126,6 +127,9 @@ class RCJKMySQLBackend:
                 self._tempFontItemsCache["designspace"] = structureDesignspaceData(
                     font_data["data"].get("designspace", {})
                 )
+                self._tempFontItemsCache["features"] = font_data["data"].get(
+                    "features", ""
+                )
                 self._tempFontItemsCache["customData"] = (
                     font_data["data"].get("fontlib", {}) | standardCustomDataItems
                 )
@@ -194,6 +198,22 @@ class RCJKMySQLBackend:
         designspace = await self._getDesignspace()
         designspace.unitsPerEm = value
         await self._writeDesignspace(designspace)
+
+    async def getFeatures(self) -> OpenTypeFeatures:
+        await self._getMiscFontItems()
+        featureText = self._tempFontItemsCache["features"]
+        return OpenTypeFeatures(text=featureText)
+
+    async def putFeatures(self, features: OpenTypeFeatures) -> None:
+        if features.language != "fea":
+            logger.warning(
+                f"skip writing features in unsupported language: {features.language!r}"
+            )
+            return
+
+        await self._getMiscFontItems()
+        self._tempFontItemsCache["features"] = features.text
+        _ = await self.client.font_update(self.fontUID, features=features.text)
 
     async def getCustomData(self) -> dict[str, Any]:
         customData = self._tempFontItemsCache.get("customData")

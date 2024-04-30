@@ -544,8 +544,8 @@ def structureDesignspaceData(designspaceData: dict[str, Any]) -> Font:
 
 def unstructureDesignspaceData(designspace: Font) -> dict[str, Any]:
     designspaceData = unstructure(designspace)
-    del designspaceData["glyphs"]
-    del designspaceData["glyphMap"]
+    designspaceData.pop("glyphs", None)
+    designspaceData.pop("glyphMap", None)
     return designspaceData
 
 
