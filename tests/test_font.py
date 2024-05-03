@@ -1057,7 +1057,7 @@ async def test_read_write_anchors(writableTestFont):
     assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 750
 
 
-async def test_read_write_anchors_in_component_glyph(writableTestFont):
+async def test_read_write_anchors_composite_glyph(writableTestFont):
     glyphName = "uni0030"
     codePoint = 0x30
     async with contextlib.aclosing(writableTestFont):
