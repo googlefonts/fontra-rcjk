@@ -1053,7 +1053,8 @@ async def test_read_write_anchors(writableTestFont):
         await writableTestFont.putGlyph("a", glyph, [ord("a")])
 
     reopenedFont = getFileSystemBackend(writableTestFont.path)
-    glyph = await reopenedFont.getGlyph("a")
+    async with contextlib.aclosing(reopenedFont):
+        glyph = await reopenedFont.getGlyph("a")
     assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 750
 
 
@@ -1068,7 +1069,8 @@ async def test_read_write_anchors_composite_glyph(writableTestFont):
         await writableTestFont.putGlyph(glyphName, glyph, [codePoint])
 
     reopenedFont = getFileSystemBackend(writableTestFont.path)
-    reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph(glyphName)
     assert glyph == reopenedGlyph
 
 
@@ -1081,5 +1083,6 @@ async def test_read_write_glyph_locked(writableTestFont):
         await writableTestFont.putGlyph(glyphName, glyph, [codePoint])
 
     reopenedFont = getFileSystemBackend(writableTestFont.path)
-    reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph(glyphName)
     assert glyph == reopenedGlyph
