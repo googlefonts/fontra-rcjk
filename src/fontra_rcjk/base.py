@@ -60,6 +60,10 @@ class GLIFGlyph:
         self.width = staticGlyph.xAdvance
         self.path = staticGlyph.path
         self.components = []
+        self.anchors = [
+            {"name": a.name, "x": a.x, "y": a.y} for a in staticGlyph.anchors
+        ]
+
         self.variableComponents = []
         for component in staticGlyph.components:
             if component.location or not allowClassicComponents:

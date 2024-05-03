@@ -4,6 +4,7 @@ import shutil
 from importlib.metadata import entry_points
 
 import pytest
+from fontra.backends import getFileSystemBackend
 from fontra.core.classes import (
     Axes,
     FontAxis,
@@ -1041,3 +1042,15 @@ async def test_putFeatures(writableTestFont):
     async with contextlib.aclosing(writableTestFont):
         await writableTestFont.putFeatures(OpenTypeFeatures(text=featureText))
         assert (await writableTestFont.getFeatures()).text == featureText
+
+
+async def test_read_write_anchors(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
+        glyph = await writableTestFont.getGlyph("a")
+        assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 700
+        glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y = 750
+        await writableTestFont.putGlyph("a", glyph, [ord("a")])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    glyph = await reopenedFont.getGlyph("a")
+    assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 750
