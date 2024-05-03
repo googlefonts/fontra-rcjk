@@ -4,7 +4,7 @@ from copy import deepcopy
 from functools import cached_property
 from typing import Any, Union
 
-from fontra.backends.designspace import cleanupTransform
+from fontra.backends.designspace import cleanupTransform, unpackAnchors
 from fontra.core.classes import (
     Component,
     DiscreteFontAxis,
@@ -34,6 +34,7 @@ class GLIFGlyph:
         self.width = 0
         self.path = None
         self.lib = {}
+        self.anchors = []
         self.components = []
         self.variableComponents = []
 
@@ -102,6 +103,7 @@ class GLIFGlyph:
             xAdvance=self.width,
             path=deepcopy(self.path),
             components=deepcopy(self.components),
+            anchors=unpackAnchors(self.anchors),
         )
 
     def copy(self):
