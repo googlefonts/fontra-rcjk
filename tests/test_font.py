@@ -1082,6 +1082,4 @@ async def test_read_write_glyph_locked(writableTestFont):
 
     reopenedFont = getFileSystemBackend(writableTestFont.path)
     reopenedGlyph = await reopenedFont.getGlyph(glyphName)
-    assert glyph.customData.get("fontra.glyph.locked") == reopenedGlyph.customData.get(
-        "fontra.glyph.locked"
-    )
+    assert glyph == reopenedGlyph

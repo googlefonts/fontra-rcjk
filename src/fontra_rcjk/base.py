@@ -414,6 +414,8 @@ def buildLayerGlyphsFromVariableGlyph(
 
     if glyph.customData:
         defaultGlyph.lib[CUSTOM_DATA_LIB_KEY] = glyph.customData
+    else:
+        defaultGlyph.lib.pop(CUSTOM_DATA_LIB_KEY, None)  # delete if present
 
     # Mark that we shouldn't try to upconvert shadow axes
     # defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
