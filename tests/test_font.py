@@ -1070,3 +1070,18 @@ async def test_read_write_anchors_composite_glyph(writableTestFont):
     reopenedFont = getFileSystemBackend(writableTestFont.path)
     reopenedGlyph = await reopenedFont.getGlyph(glyphName)
     assert glyph == reopenedGlyph
+
+
+async def test_read_glyph_locked(writableTestFont):
+    glyphName = "space"
+    codePoint = 0x20
+    async with contextlib.aclosing(writableTestFont):
+        glyph = await writableTestFont.getGlyph(glyphName)
+        glyph.customData["fontra.glyph.locked"] = True
+        await writableTestFont.putGlyph(glyphName, glyph, [codePoint])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+    assert glyph.customData.get("fontra.glyph.locked") == reopenedGlyph.customData.get(
+        "fontra.glyph.locked"
+    )
