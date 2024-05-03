@@ -1072,8 +1072,8 @@ async def test_read_write_anchors_composite_glyph(writableTestFont):
     assert glyph == reopenedGlyph
 
 
-async def test_read_glyph_locked(writableTestFont):
-    glyphName = "space"
+async def test_read_write_glyph_locked(writableTestFont):
+    glyphName = "uni0030"
     codePoint = 0x20
     async with contextlib.aclosing(writableTestFont):
         glyph = await writableTestFont.getGlyph(glyphName)

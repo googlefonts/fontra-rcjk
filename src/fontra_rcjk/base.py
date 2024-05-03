@@ -25,6 +25,7 @@ from fontTools.ufoLib.glifLib import readGlyphFromString, writeGlyphToString
 from fontTools.varLib.models import piecewiseLinearMap
 
 FONTRA_STATUS_KEY = "fontra.development.status"
+CUSTOM_DATA_LIB_KEY = "xyz.fontra.customData"
 
 
 class GLIFGlyph:
@@ -233,6 +234,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
         axes=defaultGlyph.axes,
         sources=sources,
         layers=layers,
+        customData=defaultGlyph.lib.get(CUSTOM_DATA_LIB_KEY, {}),
     )
 
     # if not defaultGlyph.lib.get("robocjk.localAxes.behavior.2024", False):
@@ -409,6 +411,9 @@ def buildLayerGlyphsFromVariableGlyph(
 
     # Get rid of legacy data
     defaultGlyph.lib.pop("fontra.layerNames", None)
+
+    if glyph.customData:
+        defaultGlyph.lib[CUSTOM_DATA_LIB_KEY] = glyph.customData
 
     # Mark that we shouldn't try to upconvert shadow axes
     # defaultGlyph.lib["robocjk.localAxes.behavior.2024"] = True
