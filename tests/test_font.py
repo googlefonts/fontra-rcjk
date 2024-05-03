@@ -4,7 +4,9 @@ import shutil
 from importlib.metadata import entry_points
 
 import pytest
+from fontra.backends import getFileSystemBackend
 from fontra.core.classes import (
+    Anchor,
     Axes,
     FontAxis,
     GlyphAxis,
@@ -474,6 +476,7 @@ glyphData_a_before = [
     "some note",
     "</note>",
     '  <guideline x="360" y="612" angle="0"/>',
+    '  <anchor x="250" y="700" name="top"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="50" y="0" type="line"/>',
@@ -519,6 +522,7 @@ glyphData_a_after = [
     "some note",
     "</note>",
     '  <guideline x="360" y="612" angle="0"/>',
+    '  <anchor x="250" y="700" name="top"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="80" y="100" type="line"/>',
@@ -584,6 +588,7 @@ glyphData_a_after_delete_source = [
     "some note",
     "</note>",
     '  <guideline x="360" y="612" angle="0"/>',
+    '  <anchor x="250" y="700" name="top"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="50" y="0" type="line"/>',
@@ -744,6 +749,7 @@ layerNameMappingTestData = [
     "some note",
     "</note>",
     '  <guideline x="360" y="612" angle="0"/>',
+    '  <anchor x="250" y="700" name="top"/>',
     "  <outline>",
     "    <contour>",
     '      <point x="50" y="0" type="line"/>',
@@ -1037,3 +1043,30 @@ async def test_putFeatures(writableTestFont):
     async with contextlib.aclosing(writableTestFont):
         await writableTestFont.putFeatures(OpenTypeFeatures(text=featureText))
         assert (await writableTestFont.getFeatures()).text == featureText
+
+
+async def test_read_write_anchors(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
+        glyph = await writableTestFont.getGlyph("a")
+        assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 700
+        glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y = 750
+        await writableTestFont.putGlyph("a", glyph, [ord("a")])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    glyph = await reopenedFont.getGlyph("a")
+    assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 750
+
+
+async def test_read_write_anchors_composite_glyph(writableTestFont):
+    glyphName = "uni0030"
+    codePoint = 0x30
+    async with contextlib.aclosing(writableTestFont):
+        glyph = await writableTestFont.getGlyph(glyphName)
+        for layer in glyph.layers.values():
+            assert not layer.glyph.anchors
+            layer.glyph.anchors.append(Anchor(name="top", x=200, y=700))
+        await writableTestFont.putGlyph(glyphName, glyph, [codePoint])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+    assert glyph == reopenedGlyph

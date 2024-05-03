@@ -4,7 +4,7 @@ from copy import deepcopy
 from functools import cached_property
 from typing import Any, Union
 
-from fontra.backends.designspace import cleanupTransform
+from fontra.backends.designspace import cleanupTransform, unpackAnchors
 from fontra.core.classes import (
     Component,
     DiscreteFontAxis,
@@ -34,6 +34,7 @@ class GLIFGlyph:
         self.width = 0
         self.path = None
         self.lib = {}
+        self.anchors = []
         self.components = []
         self.variableComponents = []
 
@@ -59,6 +60,10 @@ class GLIFGlyph:
         self.width = staticGlyph.xAdvance
         self.path = staticGlyph.path
         self.components = []
+        self.anchors = [
+            {"name": a.name, "x": a.x, "y": a.y} for a in staticGlyph.anchors
+        ]
+
         self.variableComponents = []
         for component in staticGlyph.components:
             if component.location or not allowClassicComponents:
@@ -70,10 +75,12 @@ class GLIFGlyph:
     def asGLIFData(self):
         return writeGlyphToString(self.name, self, self.drawPoints, validate=False)
 
-    def hasOutlineOrClassicComponents(self):
+    def hasOutlineOrClassicComponentsOrAnchors(self):
         return (
             True
-            if (self.path is not None and self.path.coordinates) or self.components
+            if (self.path is not None and self.path.coordinates)
+            or self.components
+            or self.anchors
             else False
         )
 
@@ -102,6 +109,7 @@ class GLIFGlyph:
             xAdvance=self.width,
             path=deepcopy(self.path),
             components=deepcopy(self.components),
+            anchors=unpackAnchors(self.anchors),
         )
 
     def copy(self):
@@ -371,7 +379,7 @@ def buildLayerGlyphsFromVariableGlyph(
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
-        if layerGlyph.hasOutlineOrClassicComponents():
+        if layerGlyph.hasOutlineOrClassicComponentsOrAnchors():
             safeLayerName = makeSafeLayerName(source.layerName)
             varDict["layerName"] = safeLayerName
             if safeLayerName != source.layerName:
