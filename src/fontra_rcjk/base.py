@@ -75,10 +75,12 @@ class GLIFGlyph:
     def asGLIFData(self):
         return writeGlyphToString(self.name, self, self.drawPoints, validate=False)
 
-    def hasOutlineOrClassicComponents(self):
+    def hasOutlineOrClassicComponentsOrAnchors(self):
         return (
             True
-            if (self.path is not None and self.path.coordinates) or self.components
+            if (self.path is not None and self.path.coordinates)
+            or self.components
+            or self.anchors
             else False
         )
 
@@ -377,7 +379,7 @@ def buildLayerGlyphsFromVariableGlyph(
         if deepComponents:
             varDict["deepComponents"] = deepComponents
 
-        if layerGlyph.hasOutlineOrClassicComponents():
+        if layerGlyph.hasOutlineOrClassicComponentsOrAnchors():
             safeLayerName = makeSafeLayerName(source.layerName)
             varDict["layerName"] = safeLayerName
             if safeLayerName != source.layerName:

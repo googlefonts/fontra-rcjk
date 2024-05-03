@@ -6,6 +6,7 @@ from importlib.metadata import entry_points
 import pytest
 from fontra.backends import getFileSystemBackend
 from fontra.core.classes import (
+    Anchor,
     Axes,
     FontAxis,
     GlyphAxis,
@@ -1054,3 +1055,18 @@ async def test_read_write_anchors(writableTestFont):
     reopenedFont = getFileSystemBackend(writableTestFont.path)
     glyph = await reopenedFont.getGlyph("a")
     assert glyph.layers[glyph.sources[0].layerName].glyph.anchors[0].y == 750
+
+
+async def test_read_write_anchors_in_component_glyph(writableTestFont):
+    glyphName = "uni0030"
+    codePoint = 0x30
+    async with contextlib.aclosing(writableTestFont):
+        glyph = await writableTestFont.getGlyph(glyphName)
+        for layer in glyph.layers.values():
+            assert not layer.glyph.anchors
+            layer.glyph.anchors.append(Anchor(name="top", x=200, y=700))
+        await writableTestFont.putGlyph(glyphName, glyph, [codePoint])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+    assert glyph == reopenedGlyph
