@@ -11,6 +11,7 @@ from fontra.core.classes import (
     FontAxis,
     GlyphAxis,
     GlyphSource,
+    Guideline,
     Layer,
     OpenTypeFeatures,
     PackedPath,
@@ -1086,3 +1087,27 @@ async def test_read_write_glyph_customData(writableTestFont):
     async with contextlib.aclosing(reopenedFont):
         reopenedGlyph = await reopenedFont.getGlyph(glyphName)
     assert glyph == reopenedGlyph
+
+
+async def test_read_write_guidelines(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
+        glyph = await writableTestFont.getGlyph("a")
+        guidelines = glyph.layers[glyph.sources[0].layerName].glyph.guidelines
+        guideline = guidelines[0]
+        assert guideline.y == 612
+        guideline.name = "some guideline"
+        guideline.locked = True
+        guidelines.append(Guideline(name="top", x=250, y=700, angle=15, locked=True))
+        await writableTestFont.putGlyph("a", glyph, [ord("a")])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    async with contextlib.aclosing(reopenedFont):
+        glyph = await reopenedFont.getGlyph("a")
+    reopenedGuidelines = glyph.layers[glyph.sources[0].layerName].glyph.guidelines
+    assert len(reopenedGuidelines) == len(guidelines)
+    assert reopenedGuidelines[0] == Guideline(
+        name="some guideline", x=360, y=612, angle=0, locked=True
+    )
+    assert reopenedGuidelines[1] == Guideline(
+        name="top", x=250, y=700, angle=15, locked=True
+    )

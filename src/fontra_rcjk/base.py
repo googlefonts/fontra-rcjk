@@ -4,7 +4,11 @@ from copy import deepcopy
 from functools import cached_property
 from typing import Any, Union
 
-from fontra.backends.designspace import cleanupTransform, unpackAnchors
+from fontra.backends.designspace import (
+    cleanupTransform,
+    unpackAnchors,
+    unpackGuidelines,
+)
 from fontra.core.classes import (
     Component,
     DiscreteFontAxis,
@@ -36,6 +40,7 @@ class GLIFGlyph:
         self.path = None
         self.lib = {}
         self.anchors = []
+        self.guidelines = []
         self.components = []
         self.variableComponents = []
 
@@ -63,6 +68,10 @@ class GLIFGlyph:
         self.components = []
         self.anchors = [
             {"name": a.name, "x": a.x, "y": a.y} for a in staticGlyph.anchors
+        ]
+        self.guidelines = [
+            {"name": g.name, "x": g.x, "y": g.y, "angle": g.angle}
+            for g in staticGlyph.guidelines
         ]
 
         self.variableComponents = []
@@ -111,6 +120,7 @@ class GLIFGlyph:
             path=deepcopy(self.path),
             components=deepcopy(self.components),
             anchors=unpackAnchors(self.anchors),
+            guidelines=unpackGuidelines(self.guidelines),
         )
 
     def copy(self):
