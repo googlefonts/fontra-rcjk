@@ -20,7 +20,7 @@ from fontra.core.classes import (
     unstructure,
 )
 
-from fontra_rcjk.base import makeSafeLayerName
+from fontra_rcjk.base import makeSafeLayerName, standardCustomDataItems
 
 dataDir = pathlib.Path(__file__).resolve().parent / "data"
 
@@ -1086,3 +1086,27 @@ async def test_read_write_glyph_customData(writableTestFont):
     async with contextlib.aclosing(reopenedFont):
         reopenedGlyph = await reopenedFont.getGlyph(glyphName)
     assert glyph == reopenedGlyph
+
+
+async def test_statusFieldDefinitions(writableTestFont):
+    customData = await writableTestFont.getCustomData()
+    statusDefinitions = customData.get("fontra.sourceStatusFieldDefinitions")
+    assert (
+        standardCustomDataItems.get("fontra.sourceStatusFieldDefinitions")
+        == statusDefinitions
+    )
+    newStatusDef = {
+        "color": [0, 0, 0, 1],
+        "label": "Rejected",
+        "value": 5,
+    }
+    statusDefinitionsCopy = statusDefinitions.copy()
+    statusDefinitionsCopy.append(newStatusDef)
+
+    await writableTestFont.putCustomData(
+        {"fontra.sourceStatusFieldDefinitions": statusDefinitionsCopy}
+    )
+    newCustomData = await writableTestFont.getCustomData()
+    newStatusDefinitions = newCustomData.get("fontra.sourceStatusFieldDefinitions")
+
+    assert newStatusDefinitions[5] == newStatusDef
