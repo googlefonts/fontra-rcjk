@@ -131,7 +131,7 @@ class RCJKMySQLBackend:
                     "features", ""
                 )
                 self._tempFontItemsCache["customData"] = (
-                    font_data["data"].get("fontlib", {}) | standardCustomDataItems
+                    standardCustomDataItems | font_data["data"].get("fontlib", {})
                 )
                 self._tempFontItemsCache.updateTimeOut()
                 del self._getMiscFontItemsTask
