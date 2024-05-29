@@ -1,4 +1,5 @@
 import contextlib
+import json
 import pathlib
 import shutil
 from importlib.metadata import entry_points
@@ -1100,13 +1101,19 @@ async def test_statusFieldDefinitions(writableTestFont):
         "label": "Rejected",
         "value": 5,
     }
-    statusDefinitionsCopy = statusDefinitions.copy()
-    statusDefinitionsCopy.append(newStatusDef)
+    statusDefinitions.append(newStatusDef)
 
-    await writableTestFont.putCustomData(
-        {"fontra.sourceStatusFieldDefinitions": statusDefinitionsCopy}
-    )
+    editedCustomData = customData | {
+        "fontra.sourceStatusFieldDefinitions": statusDefinitions
+    }
+    await writableTestFont.putCustomData(editedCustomData)
+
     newCustomData = await writableTestFont.getCustomData()
     newStatusDefinitions = newCustomData.get("fontra.sourceStatusFieldDefinitions")
 
     assert newStatusDefinitions[5] == newStatusDef
+
+    fontLibPath = writableTestFont.path / "fontLib.json"
+    fontLib = json.loads(fontLibPath.read_text())
+
+    assert editedCustomData == fontLib
