@@ -1091,9 +1091,9 @@ async def test_read_write_glyph_customData(writableTestFont):
 
 async def test_statusFieldDefinitions(writableTestFont):
     customData = await writableTestFont.getCustomData()
-    statusDefinitions = customData.get("fontra.sourceStatusFieldDefinitions")
+    statusDefinitions = customData["fontra.sourceStatusFieldDefinitions"]
     assert (
-        standardCustomDataItems.get("fontra.sourceStatusFieldDefinitions")
+        standardCustomDataItems["fontra.sourceStatusFieldDefinitions"]
         == statusDefinitions
     )
     newStatusDef = {
@@ -1109,7 +1109,7 @@ async def test_statusFieldDefinitions(writableTestFont):
     await writableTestFont.putCustomData(editedCustomData)
 
     newCustomData = await writableTestFont.getCustomData()
-    newStatusDefinitions = newCustomData.get("fontra.sourceStatusFieldDefinitions")
+    newStatusDefinitions = newCustomData["fontra.sourceStatusFieldDefinitions"]
 
     assert newStatusDefinitions[5] == newStatusDef
 
