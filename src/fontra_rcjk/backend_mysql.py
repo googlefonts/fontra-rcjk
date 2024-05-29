@@ -131,7 +131,7 @@ class RCJKMySQLBackend:
                     "features", ""
                 )
                 self._tempFontItemsCache["customData"] = (
-                    font_data["data"].get("fontlib", {}) | standardCustomDataItems
+                    standardCustomDataItems | font_data["data"].get("fontlib", {})
                 )
                 self._tempFontItemsCache.updateTimeOut()
                 del self._getMiscFontItemsTask
@@ -220,7 +220,7 @@ class RCJKMySQLBackend:
         if customData is None:
             await self._getMiscFontItems()
             customData = self._tempFontItemsCache["customData"]
-        return customData
+        return deepcopy(customData)
 
     async def putCustomData(self, customData: dict[str, Any]) -> None:
         await self._getMiscFontItems()

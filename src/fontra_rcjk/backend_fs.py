@@ -261,15 +261,10 @@ class RCJKBackend:
         customDataPath = self.path / FONTLIB_FILENAME
         if customDataPath.is_file():
             customData = json.loads(customDataPath.read_text(encoding="utf-8"))
-        return customData | standardCustomDataItems
+        return deepcopy(standardCustomDataItems) | customData
 
     async def putCustomData(self, customData: dict[str, Any]) -> None:
         customDataPath = self.path / FONTLIB_FILENAME
-        customData = {
-            k: v
-            for k, v in customData.items()
-            if k not in standardCustomDataItems or standardCustomDataItems[k] != v
-        }
         customDataPath.write_text(json.dumps(customData, indent=2), encoding="utf-8")
 
     async def watchExternalChanges(

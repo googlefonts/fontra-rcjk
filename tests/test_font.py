@@ -1,4 +1,5 @@
 import contextlib
+import json
 import pathlib
 import shutil
 from importlib.metadata import entry_points
@@ -20,7 +21,7 @@ from fontra.core.classes import (
     unstructure,
 )
 
-from fontra_rcjk.base import makeSafeLayerName
+from fontra_rcjk.base import makeSafeLayerName, standardCustomDataItems
 
 dataDir = pathlib.Path(__file__).resolve().parent / "data"
 
@@ -1086,3 +1087,33 @@ async def test_read_write_glyph_customData(writableTestFont):
     async with contextlib.aclosing(reopenedFont):
         reopenedGlyph = await reopenedFont.getGlyph(glyphName)
     assert glyph == reopenedGlyph
+
+
+async def test_statusFieldDefinitions(writableTestFont):
+    customData = await writableTestFont.getCustomData()
+    statusDefinitions = customData["fontra.sourceStatusFieldDefinitions"]
+    assert (
+        standardCustomDataItems["fontra.sourceStatusFieldDefinitions"]
+        == statusDefinitions
+    )
+    newStatusDef = {
+        "color": [0, 0, 0, 1],
+        "label": "Rejected",
+        "value": 5,
+    }
+    statusDefinitions.append(newStatusDef)
+
+    editedCustomData = customData | {
+        "fontra.sourceStatusFieldDefinitions": statusDefinitions
+    }
+    await writableTestFont.putCustomData(editedCustomData)
+
+    newCustomData = await writableTestFont.getCustomData()
+    newStatusDefinitions = newCustomData["fontra.sourceStatusFieldDefinitions"]
+
+    assert newStatusDefinitions[5] == newStatusDef
+
+    fontLibPath = writableTestFont.path / "fontLib.json"
+    fontLib = json.loads(fontLibPath.read_text())
+
+    assert editedCustomData == fontLib
