@@ -261,7 +261,7 @@ class RCJKBackend:
         customDataPath = self.path / FONTLIB_FILENAME
         if customDataPath.is_file():
             customData = json.loads(customDataPath.read_text(encoding="utf-8"))
-        return customData | standardCustomDataItems
+        return standardCustomDataItems | customData
 
     async def putCustomData(self, customData: dict[str, Any]) -> None:
         customDataPath = self.path / FONTLIB_FILENAME
