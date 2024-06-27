@@ -15,6 +15,7 @@ from fontra.core.classes import (
     Font,
     FontInfo,
     FontSource,
+    Kerning,
     OpenTypeFeatures,
     VariableGlyph,
 )
@@ -235,6 +236,12 @@ class RCJKBackend:
                 gs.deleteGlyph(glyphName)
 
         del self._glyphMap[glyphName]
+
+    async def getKerning(self) -> dict[str, Kerning]:
+        return {}
+
+    async def putKerning(self, kerning: dict[str, Kerning]) -> None:
+        logger.warning("writing kerning is not yet supported")
 
     async def getFeatures(self) -> OpenTypeFeatures:
         featuresPath = self.path / FEA_FILENAME

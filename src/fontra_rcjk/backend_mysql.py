@@ -13,6 +13,7 @@ from fontra.core.classes import (
     Font,
     FontInfo,
     FontSource,
+    Kerning,
     OpenTypeFeatures,
     VariableGlyph,
     structure,
@@ -198,6 +199,12 @@ class RCJKMySQLBackend:
         designspace = await self._getDesignspace()
         designspace.unitsPerEm = value
         await self._writeDesignspace(designspace)
+
+    async def getKerning(self) -> dict[str, Kerning]:
+        return {}
+
+    async def putKerning(self, kerning: dict[str, Kerning]) -> None:
+        logger.warning("writing kerning is not yet supported")
 
     async def getFeatures(self) -> OpenTypeFeatures:
         await self._getMiscFontItems()
