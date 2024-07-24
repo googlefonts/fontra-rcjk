@@ -1,0 +1,97 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="A" format="2">
+  <advance width="396"/>
+  <unicode hex="0041"/>
+  <unicode hex="0061"/>
+  <outline>
+    <contour>
+      <point x="20" y="0" type="line"/>
+      <point x="60" y="0" type="line"/>
+      <point x="200" y="700" type="line"/>
+      <point x="165" y="700" type="line"/>
+    </contour>
+    <contour>
+      <point x="75" y="164" type="line"/>
+      <point x="325" y="164" type="line"/>
+      <point x="325" y="200" type="line"/>
+      <point x="75" y="200" type="line"/>
+    </contour>
+    <contour>
+      <point x="332" y="0" type="line"/>
+      <point x="376" y="0" type="line"/>
+      <point x="231" y="700" type="line"/>
+      <point x="192" y="700" type="line"/>
+    </contour>
+    <contour>
+      <point x="175" y="661" type="line"/>
+      <point x="222" y="661" type="line"/>
+      <point x="222" y="700" type="line"/>
+      <point x="175" y="700" type="line"/>
+    </contour>
+  </outline>
+  <lib>
+    <dict>
+      <key>robocjk.locationBase</key>
+      <string>5bea6334</string>
+      <key>robocjk.status</key>
+      <integer>0</integer>
+      <key>robocjk.variationGlyphs</key>
+      <array>
+        <dict>
+          <key>fontraLayerName</key>
+          <string>MutatorSansBoldCondensed/foreground</string>
+          <key>layerName</key>
+          <string>MutatorSansBoldCondensed_foreground.db3714ad9ac4</string>
+          <key>location</key>
+          <dict/>
+          <key>locationBase</key>
+          <string>f22d1bbd</string>
+          <key>on</key>
+          <true/>
+          <key>sourceName</key>
+          <string>BoldCondensed</string>
+          <key>status</key>
+          <integer>0</integer>
+          <key>width</key>
+          <integer>740</integer>
+        </dict>
+        <dict>
+          <key>fontraLayerName</key>
+          <string>MutatorSansLightWide/foreground</string>
+          <key>layerName</key>
+          <string>MutatorSansLightWide_foreground.8bb25a79b80b</string>
+          <key>location</key>
+          <dict/>
+          <key>locationBase</key>
+          <string>d7abd222</string>
+          <key>on</key>
+          <true/>
+          <key>sourceName</key>
+          <string>LightWide</string>
+          <key>status</key>
+          <integer>0</integer>
+          <key>width</key>
+          <integer>1190</integer>
+        </dict>
+        <dict>
+          <key>fontraLayerName</key>
+          <string>MutatorSansBoldWide/foreground</string>
+          <key>layerName</key>
+          <string>MutatorSansBoldWide_foreground.53eb9954912f</string>
+          <key>location</key>
+          <dict/>
+          <key>locationBase</key>
+          <string>5d4e7f1d</string>
+          <key>on</key>
+          <true/>
+          <key>sourceName</key>
+          <string>BoldWide</string>
+          <key>status</key>
+          <integer>0</integer>
+          <key>width</key>
+          <integer>1290</integer>
+        </dict>
+      </array>
+    </dict>
+  </lib>
+</glyph>
