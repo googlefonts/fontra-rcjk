@@ -1140,6 +1140,6 @@ async def test_round_trip_locationBase(mutatorTestFont, tmpdir):
         async with contextlib.aclosing(reopenedFont):
             for glyphName in ["A", "B"]:
                 sourceGlyph = await mutatorTestFont.getGlyph(glyphName)
-                destGlyph = await mutatorTestFont.getGlyph(glyphName)
+                destGlyph = await reopenedFont.getGlyph(glyphName)
                 assert sourceGlyph == destGlyph
                 assert all(source.locationBase for source in sourceGlyph.sources)
