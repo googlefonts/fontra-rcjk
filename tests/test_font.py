@@ -5,7 +5,8 @@ import shutil
 from importlib.metadata import entry_points
 
 import pytest
-from fontra.backends import getFileSystemBackend
+from fontra.backends import getFileSystemBackend, newFileSystemBackend
+from fontra.backends.copy import copyFont
 from fontra.core.classes import (
     Anchor,
     Axes,
@@ -466,6 +467,12 @@ def writableTestFont(tmpdir):
     destPath = tmpdir / sourcePath.name
     shutil.copytree(sourcePath, destPath)
     return getBackendClassByName("rcjk").fromPath(destPath)
+
+
+@pytest.fixture
+def mutatorTestFont():
+    sourcePath = dataDir / "MutatorSansLocationBase.rcjk"
+    return getBackendClassByName("rcjk").fromPath(sourcePath)
 
 
 glyphData_a_before = [
@@ -1117,3 +1124,21 @@ async def test_statusFieldDefinitions(writableTestFont):
     fontLib = json.loads(fontLibPath.read_text())
 
     assert editedCustomData == fontLib
+
+
+async def test_round_trip_locationBase(mutatorTestFont, tmpdir):
+    tmpdir = pathlib.Path(tmpdir)
+    destPath = tmpdir / "test.rcjk"
+
+    destFont = newFileSystemBackend(destPath)
+
+    async with contextlib.aclosing(destFont), contextlib.aclosing(mutatorTestFont):
+        await copyFont(mutatorTestFont, destFont)
+
+    reopenedFont = getFileSystemBackend(destPath)
+    async with contextlib.aclosing(reopenedFont):
+        for glyphName in ["A", "B"]:
+            sourceGlyph = await mutatorTestFont.getGlyph(glyphName)
+            destGlyph = await mutatorTestFont.getGlyph(glyphName)
+            assert sourceGlyph == destGlyph
+            assert all(source.locationBase for source in sourceGlyph.sources)
