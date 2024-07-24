@@ -149,6 +149,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
     sources = [
         GlyphSource(
             name="<default>",
+            locationBase=defaultGlyph.lib.get("robocjk.locationBase"),
             layerName="foreground",
             customData={FONTRA_STATUS_KEY: defaultGlyph.lib.get("robocjk.status", 0)},
         )
@@ -209,6 +210,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
         if components:
             layerGlyph.components += components
 
+        locationBase = varDict.get("locationBase")
         location = varDict["location"]
         location = {
             k: float(v) if isinstance(v, str) else v for k, v in location.items()
@@ -216,6 +218,7 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
         sources.append(
             GlyphSource(
                 name=sourceName,
+                locationBase=locationBase,
                 location=location,
                 layerName=fontraLayerNameMapping.get(layerName, layerName),
                 inactive=inactiveFlag,
@@ -362,6 +365,8 @@ def buildLayerGlyphsFromVariableGlyph(
         devStatus = source.customData.get(FONTRA_STATUS_KEY, 0)
         if source.layerName == defaultLayerName:
             defaultGlyph.lib["robocjk.status"] = devStatus
+            if source.locationBase is not None:
+                defaultGlyph.lib["robocjk.locationBase"] = source.locationBase
             # This is the default glyph, we don't treat it like a layer in .rcjk
             continue
 
@@ -372,8 +377,12 @@ def buildLayerGlyphsFromVariableGlyph(
             "location": source.location,
             "status": devStatus,
         }
+
         if layerGlyph.width != defaultGlyph.width:
             varDict["width"] = layerGlyph.width
+
+        if source.locationBase is not None:
+            varDict["locationBase"] = source.locationBase
 
         deepComponents = buildLibComponentsFromVariableComponents(
             layerGlyph.variableComponents
