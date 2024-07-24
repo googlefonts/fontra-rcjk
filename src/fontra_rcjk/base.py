@@ -367,6 +367,8 @@ def buildLayerGlyphsFromVariableGlyph(
             defaultGlyph.lib["robocjk.status"] = devStatus
             if source.locationBase is not None:
                 defaultGlyph.lib["robocjk.locationBase"] = source.locationBase
+            else:
+                defaultGlyph.lib.pop("robocjk.locationBase", None)
             # This is the default glyph, we don't treat it like a layer in .rcjk
             continue
 
