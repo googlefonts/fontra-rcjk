@@ -1132,13 +1132,14 @@ async def test_round_trip_locationBase(mutatorTestFont, tmpdir):
 
     destFont = newFileSystemBackend(destPath)
 
-    async with contextlib.aclosing(destFont), contextlib.aclosing(mutatorTestFont):
-        await copyFont(mutatorTestFont, destFont)
+    async with contextlib.aclosing(mutatorTestFont):
+        async with contextlib.aclosing(destFont):
+            await copyFont(mutatorTestFont, destFont)
 
-    reopenedFont = getFileSystemBackend(destPath)
-    async with contextlib.aclosing(reopenedFont):
-        for glyphName in ["A", "B"]:
-            sourceGlyph = await mutatorTestFont.getGlyph(glyphName)
-            destGlyph = await mutatorTestFont.getGlyph(glyphName)
-            assert sourceGlyph == destGlyph
-            assert all(source.locationBase for source in sourceGlyph.sources)
+        reopenedFont = getFileSystemBackend(destPath)
+        async with contextlib.aclosing(reopenedFont):
+            for glyphName in ["A", "B"]:
+                sourceGlyph = await mutatorTestFont.getGlyph(glyphName)
+                destGlyph = await mutatorTestFont.getGlyph(glyphName)
+                assert sourceGlyph == destGlyph
+                assert all(source.locationBase for source in sourceGlyph.sources)
