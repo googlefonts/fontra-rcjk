@@ -71,7 +71,7 @@ class RCJKMySQLBackend:
         if cacheDir is not None:
             cacheDir = cacheDir / fontUID
         self.cacheDir = cacheDir
-        self.pollExternalChangesInterval = 10
+        self.pollExternalChangesInterval = 6
         self._rcjkGlyphInfo = None
         self._glyphCache = LRUCache()
         self._tempFontItemsCache = TimedCache()
