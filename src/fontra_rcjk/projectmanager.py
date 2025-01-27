@@ -135,26 +135,26 @@ class RCJKProjectManager:
         )
         return token
 
-    async def projectAvailable(self, path: str, token: str) -> bool:
+    async def projectAvailable(self, projectIdentifier: str, token: str) -> bool:
         client = self.authorizedClients[token]
-        return await client.projectAvailable(path)
+        return await client.projectAvailable(projectIdentifier)
 
     async def getProjectList(self, token: str) -> list[str]:
         client = self.authorizedClients[token]
         return await client.getProjectList()
 
-    async def getRemoteSubject(self, path: str, token: str) -> FontHandler | None:
+    async def getRemoteSubject(
+        self, projectIdentifier: str, token: str
+    ) -> FontHandler | None:
         client = self.authorizedClients.get(token)
         if client is None:
             logger.info("reject unrecognized token")
             return None
 
-        assert path[0] == "/"
-        path = path[1:]
-        if not await client.projectAvailable(path):
-            logger.info(f"path {path!r} not found or not authorized")
+        if not await client.projectAvailable(projectIdentifier):
+            logger.info(f"project {projectIdentifier!r} not found or not authorized")
             return None  # not found or not authorized
-        return await client.getFontHandler(path)
+        return await client.getFontHandler(projectIdentifier)
 
 
 class AuthorizedClient:
@@ -174,9 +174,9 @@ class AuthorizedClient:
         for fontHandler in self.fontHandlers.values():
             await fontHandler.aclose()
 
-    async def projectAvailable(self, path: str) -> bool:
+    async def projectAvailable(self, projectIdentifier: str) -> bool:
         await self._setupProjectList()
-        return path in self.projectMapping
+        return projectIdentifier in self.projectMapping
 
     async def getProjectList(self) -> list[str]:
         await self._setupProjectList(True)
@@ -189,10 +189,10 @@ class AuthorizedClient:
         projectMapping = {f"{p}/{f}": uids for (p, f), uids in projectMapping.items()}
         self.projectMapping = projectMapping
 
-    async def getFontHandler(self, path: str) -> FontHandler:
-        fontHandler = self.fontHandlers.get(path)
+    async def getFontHandler(self, projectIdentifier: str) -> FontHandler:
+        fontHandler = self.fontHandlers.get(projectIdentifier)
         if fontHandler is None:
-            _, fontUID = self.projectMapping[path]
+            _, fontUID = self.projectMapping[projectIdentifier]
             backend = RCJKMySQLBackend.fromRCJKClient(
                 self.rcjkClient, fontUID, self.cacheDir
             )
@@ -200,11 +200,13 @@ class AuthorizedClient:
             userReadOnly, dummyEditor = await self._userPermissions()
 
             async def closeFontHandler():
-                logger.info(f"closing FontHandler '{path}' for '{self.username}'")
-                del self.fontHandlers[path]
+                logger.info(
+                    f"closing FontHandler '{projectIdentifier}' for '{self.username}'"
+                )
+                del self.fontHandlers[projectIdentifier]
                 await fontHandler.aclose()
 
-            logger.info(f"new FontHandler for '{path}'")
+            logger.info(f"new FontHandler for '{projectIdentifier}'")
             fontHandler = FontHandler(
                 backend,
                 readOnly=self.readOnly or userReadOnly,
@@ -212,7 +214,7 @@ class AuthorizedClient:
                 allConnectionsClosedCallback=closeFontHandler,
             )
             await fontHandler.startTasks()
-            self.fontHandlers[path] = fontHandler
+            self.fontHandlers[projectIdentifier] = fontHandler
         return fontHandler
 
     async def _userPermissions(self) -> tuple[bool, bool]:
