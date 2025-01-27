@@ -189,10 +189,10 @@ class AuthorizedClient:
         projectMapping = {f"{p}/{f}": uids for (p, f), uids in projectMapping.items()}
         self.projectMapping = projectMapping
 
-    async def getFontHandler(self, path: str) -> FontHandler:
-        fontHandler = self.fontHandlers.get(path)
+    async def getFontHandler(self, projectIdentifier: str) -> FontHandler:
+        fontHandler = self.fontHandlers.get(projectIdentifier)
         if fontHandler is None:
-            _, fontUID = self.projectMapping[path]
+            _, fontUID = self.projectMapping[projectIdentifier]
             backend = RCJKMySQLBackend.fromRCJKClient(
                 self.rcjkClient, fontUID, self.cacheDir
             )
@@ -200,11 +200,13 @@ class AuthorizedClient:
             userReadOnly, dummyEditor = await self._userPermissions()
 
             async def closeFontHandler():
-                logger.info(f"closing FontHandler '{path}' for '{self.username}'")
-                del self.fontHandlers[path]
+                logger.info(
+                    f"closing FontHandler '{projectIdentifier}' for '{self.username}'"
+                )
+                del self.fontHandlers[projectIdentifier]
                 await fontHandler.aclose()
 
-            logger.info(f"new FontHandler for '{path}'")
+            logger.info(f"new FontHandler for '{projectIdentifier}'")
             fontHandler = FontHandler(
                 backend,
                 readOnly=self.readOnly or userReadOnly,
@@ -212,7 +214,7 @@ class AuthorizedClient:
                 allConnectionsClosedCallback=closeFontHandler,
             )
             await fontHandler.startTasks()
-            self.fontHandlers[path] = fontHandler
+            self.fontHandlers[projectIdentifier] = fontHandler
         return fontHandler
 
     async def _userPermissions(self) -> tuple[bool, bool]:
