@@ -135,9 +135,9 @@ class RCJKProjectManager:
         )
         return token
 
-    async def projectAvailable(self, path: str, token: str) -> bool:
+    async def projectAvailable(self, projectIdentifier: str, token: str) -> bool:
         client = self.authorizedClients[token]
-        return await client.projectAvailable(path)
+        return await client.projectAvailable(projectIdentifier)
 
     async def getProjectList(self, token: str) -> list[str]:
         client = self.authorizedClients[token]
@@ -174,9 +174,9 @@ class AuthorizedClient:
         for fontHandler in self.fontHandlers.values():
             await fontHandler.aclose()
 
-    async def projectAvailable(self, path: str) -> bool:
+    async def projectAvailable(self, projectIdentifier: str) -> bool:
         await self._setupProjectList()
-        return path in self.projectMapping
+        return projectIdentifier in self.projectMapping
 
     async def getProjectList(self) -> list[str]:
         await self._setupProjectList(True)
