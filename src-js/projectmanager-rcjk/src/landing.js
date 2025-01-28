@@ -1,5 +1,5 @@
-import { parseCookies } from "/core/utils.js";
-import { startupLandingPage } from "/filesystem/landing.js";
+import { parseCookies } from "@fontra/core/utils.js";
+import { startupLandingPage } from "@fontra/projectmanager-filesystem/landing.js";
 
 export function startupRCJKLandingPage() {
   startupLandingPage(rcjkAuthenticateFunc);
@@ -33,3 +33,5 @@ function rcjkAuthenticateFunc() {
   loginFailureMessage.classList.toggle("hidden", !loginFailed);
   return haveToken;
 }
+
+startupRCJKLandingPage();
