@@ -340,20 +340,18 @@ class RCJKGlyphSet:
                     self.layers[layerDir.name] = glifPaths
 
     def getGlyphMap(self, ignoreCodePoints=False):
-        if self.glyphMap is None:
-            glyphMap = {}
-            for path in self.path.glob("*.glif"):
-                with open(path, "rb") as f:
-                    # assuming all unicodes are in the first 1024 bytes of the file
-                    data = f.read(1024)
-                glyphName, codePoints = extractGlyphNameAndCodePoints(data, path.name)
-                if ignoreCodePoints:
-                    codePoints = []
-                glyphMap[glyphName] = codePoints
-                self.contents[glyphName] = path
-                self.glifFileNames[path.name] = glyphName
-            self.glyphMap = glyphMap
-        return self.glyphMap
+        glyphMap = {}
+        for path in self.path.glob("*.glif"):
+            with open(path, "rb") as f:
+                # assuming all unicodes are in the first 1024 bytes of the file
+                data = f.read(1024)
+            glyphName, codePoints = extractGlyphNameAndCodePoints(data, path.name)
+            if ignoreCodePoints:
+                codePoints = []
+            glyphMap[glyphName] = codePoints
+            self.contents[glyphName] = path
+            self.glifFileNames[path.name] = glyphName
+        return glyphMap
 
     def __contains__(self, glyphName):
         return glyphName in self.contents
@@ -425,7 +423,6 @@ class RCJKGlyphSet:
         for layerPath in pathsToDelete:
             layerPath.unlink()
             self.registerWrittenPath(layerPath, deleted=True)
-        del self.glyphMap[glyphName]
 
 
 def _fudgeLayerNames(glyphName, layerGlyphs):
