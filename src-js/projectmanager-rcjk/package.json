@@ -1,0 +1,16 @@
+{
+  "name": "@fontra/projectmanager-rcjk",
+  "version": "0.0.1",
+  "exports": {
+    "./landing.js": "./src/landing.js",
+    "./landing.html": "./landing.html"
+  },
+  "type": "module",
+  "fontra": {
+    "projectmanager": "rcjk"
+  },
+  "dependencies": {
+    "@fontra/core": "https://gitpkg.vercel.app/simoncozens/fontra/src-js/fontra-core?js-split",
+    "@fontra/projectmanager-filesystem": "https://gitpkg.vercel.app/simoncozens/fontra/src-js/projectmanager-filesystem?js-split"
+  }
+}

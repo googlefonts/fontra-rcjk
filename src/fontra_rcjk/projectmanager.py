@@ -100,7 +100,7 @@ class RCJKProjectManager:
         filterContent: Callable[[bytes, str], bytes] | None = None,
     ) -> web.Response:
         token = await self.authorize(request)
-        htmlPath = resources.files("fontra_rcjk") / "landing.html"
+        htmlPath = resources.files("fontra_rcjk") / "client" / "landing.html"
         html = htmlPath.read_bytes()
         if filterContent is not None:
             html = filterContent(html, "text/html")
