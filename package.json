@@ -17,5 +17,8 @@
   },
   "workspaces": [
     "src-js/projectmanager-rcjk"
-  ]
+  ],
+  "dependencies": {
+    "@fontra/projectmanager-rcjk": "^0.0.1"
+  }
 }
