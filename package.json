@@ -1,0 +1,21 @@
+{
+  "name": "fontra-rcjk",
+  "scripts": {
+    "bundle": "webpack --config webpack.config.cjs --mode production",
+    "bundle-watch": "webpack --config webpack.config.cjs --watch"
+  },
+  "type": "module",
+  "devDependencies": {
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "html-bundler-webpack-plugin": "^4.12.2",
+    "npm": "^11.0.0",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "prettier-plugin-sort-json": "^4.1.1",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^5.1.4"
+  },
+  "workspaces": [
+    "src-js/projectmanager-rcjk"
+  ]
+}
