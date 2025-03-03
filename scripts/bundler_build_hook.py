@@ -1,5 +1,3 @@
-import pathlib
-import shutil
 import subprocess
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
