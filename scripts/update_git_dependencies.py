@@ -26,6 +26,7 @@ def getRepoHeadCommitHash(repoURL):
 repoDir = pathlib.Path(__file__).resolve().parent.parent
 
 rootPackagePath = repoDir / "package.json"
+rootPackageLockPath = repoDir / "package-lock.json"
 
 rootPackage = json.loads(rootPackagePath.read_text(encoding="utf-8"))
 
@@ -61,5 +62,8 @@ for workspace in rootPackage["workspaces"]:
         encoding="utf-8",
     )
 
+if rootPackageLockPath.is_file():
+    # We need to build package-lock.json from scratch, or else
+    rootPackageLockPath.unlink()
 
 subprocess.run("npm install --prefer-deduped", check=True, shell=True)
