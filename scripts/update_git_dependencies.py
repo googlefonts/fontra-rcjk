@@ -30,6 +30,11 @@ rootPackagePath = repoDir / "package.json"
 rootPackage = json.loads(rootPackagePath.read_text(encoding="utf-8"))
 
 for workspace in rootPackage["workspaces"]:
+    unwantedNodeModulesPath = repoDir / workspace / "node_modules"
+    assert (
+        not unwantedNodeModulesPath.is_dir()
+    ), f"unexpected node_modules folder ({unwantedNodeModulesPath.relative_to(repoDir)})"
+
     workspacePackagePath = repoDir / workspace / "package.json"
     workspacePackage = json.loads(workspacePackagePath.read_text(encoding="utf-8"))
 
