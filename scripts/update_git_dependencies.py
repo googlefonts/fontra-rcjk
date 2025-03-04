@@ -55,3 +55,6 @@ for workspace in rootPackage["workspaces"]:
         json.dumps(workspacePackage, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+
+
+subprocess.run("npm install --prefer-deduped", check=True, shell=True)
