@@ -68,6 +68,7 @@ if rootPackageLockPath.is_file():
     rootPackageLockPath.unlink()
 
 if rootNodeModulesPath.is_dir():
+    # We need to start without node_modules, or else
     shutil.rmtree(rootNodeModulesPath)
 
 subprocess.run("npm install --prefer-deduped", check=True, shell=True)
