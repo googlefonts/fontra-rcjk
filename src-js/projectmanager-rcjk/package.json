@@ -10,7 +10,7 @@
     "projectmanager": "rcjk"
   },
   "dependencies": {
-    "@fontra/core": "https://gitpkg.vercel.app/googlefonts/fontra/src-js/fontra-core?main",
-    "@fontra/projectmanager-filesystem": "https://gitpkg.vercel.app/googlefonts/fontra/src-js/projectmanager-filesystem?main"
+    "@fontra/core": "https://gitpkg.vercel.app/googlefonts/fontra/src-js/fontra-core?f811dbb",
+    "@fontra/projectmanager-filesystem": "https://gitpkg.vercel.app/googlefonts/fontra/src-js/projectmanager-filesystem?f811dbb"
   }
 }
