@@ -1,6 +1,7 @@
 import json
 import pathlib
 import re
+import shutil
 import subprocess
 from functools import cache
 from urllib.parse import urlparse
@@ -27,14 +28,14 @@ repoDir = pathlib.Path(__file__).resolve().parent.parent
 
 rootPackagePath = repoDir / "package.json"
 rootPackageLockPath = repoDir / "package-lock.json"
+rootNodeModulesPath = repoDir / "node_modules"
 
 rootPackage = json.loads(rootPackagePath.read_text(encoding="utf-8"))
 
 for workspace in rootPackage["workspaces"]:
-    unwantedNodeModulesPath = repoDir / workspace / "node_modules"
-    assert (
-        not unwantedNodeModulesPath.is_dir()
-    ), f"unexpected node_modules folder ({unwantedNodeModulesPath.relative_to(repoDir)})"
+    workspaceNodeModulesPath = repoDir / workspace / "node_modules"
+    if workspaceNodeModulesPath.is_dir():
+        shutil.rmtree(workspaceNodeModulesPath)
 
     workspacePackagePath = repoDir / workspace / "package.json"
     workspacePackage = json.loads(workspacePackagePath.read_text(encoding="utf-8"))
@@ -65,5 +66,8 @@ for workspace in rootPackage["workspaces"]:
 if rootPackageLockPath.is_file():
     # We need to build package-lock.json from scratch, or else
     rootPackageLockPath.unlink()
+
+if rootNodeModulesPath.is_dir():
+    shutil.rmtree(rootNodeModulesPath)
 
 subprocess.run("npm install --prefer-deduped", check=True, shell=True)
