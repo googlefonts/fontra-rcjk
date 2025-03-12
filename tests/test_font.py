@@ -829,26 +829,41 @@ async def test_bad_layer_name(writableTestFont):
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph(glyphName)
 
+        layerPaths = []
+
         for badLayerName in ["boooo/oooold", "boooo/oooold" * 5]:
             safeLayerName = makeSafeLayerName(badLayerName)
 
             layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
             assert not layerPath.exists()
+            layerPaths.append(layerPath)
 
-            glyph.sources.append(GlyphSource(name=badLayerName, layerName=badLayerName))
+            glyph.sources.append(
+                GlyphSource(
+                    name=badLayerName,
+                    layerName=badLayerName,
+                    customData={"fontra.development.status": 0},
+                )
+            )
             glyph.layers[badLayerName] = Layer(
                 glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
             )
 
         await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
-        assert layerPath.exists()
-        layerGlifPath = layerPath / f"{glyphName}.glif"
-        assert layerGlifPath.exists()
+        for layerPath in layerPaths:
+            assert layerPath.exists()
+            layerGlifPath = layerPath / f"{glyphName}.glif"
+            assert layerGlifPath.exists()
 
         mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
         glifData = mainGlifPath.read_text()
         assert glifData.splitlines() == layerNameMappingTestData
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+        assert reopenedGlyph == glyph
 
 
 deleteItemsTestData = [
