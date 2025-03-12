@@ -361,6 +361,7 @@ def buildLayerGlyphsFromVariableGlyph(
         defaultGlyph.lib.pop("robocjk.deepComponents", None)
 
     variationGlyphs = []
+    sourceLayerNames = set()
     for source in glyph.sources:
         devStatus = source.customData.get(FONTRA_STATUS_KEY, 0)
         if source.layerName == defaultLayerName:
@@ -398,6 +399,7 @@ def buildLayerGlyphsFromVariableGlyph(
             if safeLayerName != source.layerName:
                 fontraLayerNameMapping[safeLayerName] = source.layerName
                 varDict["fontraLayerName"] = source.layerName
+                sourceLayerNames.add(source.layerName)
         else:
             varDict["layerName"] = ""  # Mimic RoboCJK
             if source.layerName != source.name:
@@ -420,8 +422,14 @@ def buildLayerGlyphsFromVariableGlyph(
             for layerName, layerGlyph in layerGlyphs.items()
         }
 
-    # Get rid of legacy data
-    defaultGlyph.lib.pop("fontra.layerNames", None)
+    # We also need to keep track of layers that are not being used by sources
+    nonSourceLayerNameMapping = {
+        k: v for k, v in fontraLayerNameMapping.items() if v not in sourceLayerNames
+    }
+    if nonSourceLayerNameMapping:
+        defaultGlyph.lib["fontra.layerNames"] = nonSourceLayerNameMapping
+    else:
+        defaultGlyph.lib.pop("fontra.layerNames", None)
 
     if glyph.customData:
         defaultGlyph.lib[CUSTOM_DATA_LIB_KEY] = glyph.customData
