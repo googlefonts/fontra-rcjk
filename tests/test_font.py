@@ -831,20 +831,26 @@ async def test_bad_layer_name(writableTestFont):
 
         layerPaths = []
 
-        for badLayerName in ["boooo/oooold", "boooo/oooold" * 5]:
+        for doAddSource, badLayerName in [
+            (True, "boooo/oooold"),
+            (True, "boooo/oooold" * 5),
+            (False, "cpppp/ppppme"),
+            (False, "cpppp/ppppme" * 5),
+        ]:
             safeLayerName = makeSafeLayerName(badLayerName)
 
             layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
             assert not layerPath.exists()
             layerPaths.append(layerPath)
 
-            glyph.sources.append(
-                GlyphSource(
-                    name=badLayerName,
-                    layerName=badLayerName,
-                    customData={"fontra.development.status": 0},
+            if doAddSource:
+                glyph.sources.append(
+                    GlyphSource(
+                        name=badLayerName,
+                        layerName=badLayerName,
+                        customData={"fontra.development.status": 0},
+                    )
                 )
-            )
             glyph.layers[badLayerName] = Layer(
                 glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
             )
