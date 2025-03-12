@@ -794,6 +794,18 @@ layerNameMappingTestData = [
     "          <integer>0</integer>",
     "        </dict>",
     "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>good-layer-name-with-source</string>",
+    "          <key>location</key>",
+    "          <dict/>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>good-layer-name-with-source</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "        <dict>",
     "          <key>fontraLayerName</key>",
     "          <string>boooo/oooold</string>",
     "          <key>layerName</key>",
@@ -839,6 +851,8 @@ async def test_bad_layer_name(writableTestFont):
         layerPaths = []
 
         for doAddSource, badLayerName in [
+            (True, "good-layer-name-with-source"),
+            (False, "good-layer-name-without-source"),
             (True, "boooo/oooold"),
             (True, "boooo/oooold" * 5),
             (False, "cpppp/ppppme"),
