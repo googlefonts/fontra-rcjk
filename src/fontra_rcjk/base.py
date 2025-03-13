@@ -415,6 +415,18 @@ def buildLayerGlyphsFromVariableGlyph(
     else:
         defaultGlyph.lib.pop("robocjk.variationGlyphs", None)
 
+    layerVariableComponents = {}
+    for layerName, layerGlyph in layerGlyphs.items():
+        if layerGlyph.variableComponents and layerName not in sourceLayerNames:
+            layerVariableComponents[layerName] = unstructure(
+                layerGlyph.variableComponents
+            )
+
+    if layerVariableComponents:
+        defaultGlyph.lib["fontra.nonSourceLayerComponents"] = layerVariableComponents
+    else:
+        defaultGlyph.lib.pop("fontra.nonSourceLayerComponents", None)
+
     if fontraLayerNameMapping:
         rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
         layerGlyphs = {
