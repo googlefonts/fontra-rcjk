@@ -10,6 +10,7 @@ from fontra.backends.copy import copyFont
 from fontra.core.classes import (
     Anchor,
     Axes,
+    Component,
     FontAxis,
     GlyphAxis,
     GlyphSource,
@@ -1073,6 +1074,44 @@ async def test_deleteGlyphRaisesKeyError(writableTestFont):
     async with contextlib.aclosing(writableTestFont):
         with pytest.raises(KeyError, match="Glyph 'A.doesnotexist' does not exist"):
             await writableTestFont.deleteGlyph(glyphName)
+
+
+async def test_variableComponentInNonSourceLayer(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
+        glyph = VariableGlyph(
+            name="b",
+            axes=[GlyphAxis(name="testing", minValue=0, defaultValue=0, maxValue=100)],
+            sources=[
+                GlyphSource(
+                    name="<default>",
+                    layerName="foreground",
+                    customData={"fontra.development.status": 0},
+                ),
+                GlyphSource(
+                    name="testing",
+                    location={"testing": 100},
+                    layerName="testing",
+                    customData={"fontra.development.status": 0},
+                ),
+            ],
+            layers={
+                "foreground": Layer(
+                    glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
+                ),
+                "testing": Layer(
+                    glyph=StaticGlyph(xAdvance=500, components=[Component(name="a")])
+                ),
+                "testing^background": Layer(
+                    glyph=StaticGlyph(xAdvance=500, components=[Component(name="a")])
+                ),
+            },
+        )
+        await writableTestFont.putGlyph(glyph.name, glyph, [ord("b")])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph("b")
+        assert reopenedGlyph == glyph
 
 
 async def test_putUnitsPerEm(writableTestFont):
