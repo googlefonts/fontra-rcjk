@@ -143,6 +143,9 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
         layers["foreground"].glyph.components += defaultComponents
 
     fontraLayerNameMapping = dict(defaultGlyph.lib.get("fontra.layerNames", {}))
+    nonSourceLayerComponents = dict(
+        defaultGlyph.lib.get("fontra.nonSourceLayerComponents", {})
+    )
 
     dcNames = [c.name for c in defaultComponents]
 
@@ -231,6 +234,13 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
             fontraLayerNameMapping.get(layerName, layerName): layer
             for layerName, layer in layers.items()
         }
+
+    if nonSourceLayerComponents:
+        for layerName, layer in layers.items():
+            components = nonSourceLayerComponents.get(layerName, [])
+            layer.glyph.components += [
+                structure(compo, Component) for compo in components
+            ]
 
     glyph = VariableGlyph(
         name=defaultGlyph.name,
@@ -415,15 +425,15 @@ def buildLayerGlyphsFromVariableGlyph(
     else:
         defaultGlyph.lib.pop("robocjk.variationGlyphs", None)
 
-    layerVariableComponents = {}
+    nonSourceLayerComponents = {}
     for layerName, layerGlyph in layerGlyphs.items():
         if layerGlyph.variableComponents and layerName not in sourceLayerNames:
-            layerVariableComponents[layerName] = unstructure(
+            nonSourceLayerComponents[layerName] = unstructure(
                 layerGlyph.variableComponents
             )
 
-    if layerVariableComponents:
-        defaultGlyph.lib["fontra.nonSourceLayerComponents"] = layerVariableComponents
+    if nonSourceLayerComponents:
+        defaultGlyph.lib["fontra.nonSourceLayerComponents"] = nonSourceLayerComponents
     else:
         defaultGlyph.lib.pop("fontra.nonSourceLayerComponents", None)
 
