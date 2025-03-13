@@ -1096,7 +1096,11 @@ async def test_variableComponentInNonSourceLayer(writableTestFont):
             ],
             layers={
                 "foreground": Layer(
-                    glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
+                    glyph=StaticGlyph(
+                        xAdvance=500,
+                        path=makeTestPath(),
+                        components=[Component(name="a")],
+                    )
                 ),
                 "testing": Layer(
                     glyph=StaticGlyph(xAdvance=500, components=[Component(name="a")])

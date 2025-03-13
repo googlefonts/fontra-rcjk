@@ -356,6 +356,7 @@ def buildLayerGlyphsFromVariableGlyph(
         layerGlyphs[layerName] = layerGlyph
         layerGlyphs[layerName].unicodes = codePoints
     defaultGlyph = layerGlyphs["foreground"]
+    sourceLayerNames = {"foreground"}
 
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [unstructure(axis) for axis in glyph.axes]
@@ -371,7 +372,6 @@ def buildLayerGlyphsFromVariableGlyph(
         defaultGlyph.lib.pop("robocjk.deepComponents", None)
 
     variationGlyphs = []
-    sourceLayerNames = set()
     for source in glyph.sources:
         devStatus = source.customData.get(FONTRA_STATUS_KEY, 0)
         if source.layerName == defaultLayerName:
