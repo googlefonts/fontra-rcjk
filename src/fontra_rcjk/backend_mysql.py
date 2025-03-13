@@ -381,7 +381,6 @@ class RCJKMySQLBackend:
                         logger.info(f"Creating layer {layerName} of {glyphName}")
                         methodName = "layer_create"
                     args = [glyphName, methodName, layerName, xmlData]
-                print("----", xmlData)
                 await self._callGlyphMethod(
                     *args,
                     return_data=False,
