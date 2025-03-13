@@ -10,6 +10,7 @@ from fontra.backends.copy import copyFont
 from fontra.core.classes import (
     Anchor,
     Axes,
+    Component,
     FontAxis,
     GlyphAxis,
     GlyphSource,
@@ -767,6 +768,13 @@ layerNameMappingTestData = [
     "  </outline>",
     "  <lib>",
     "    <dict>",
+    "      <key>fontra.layerNames</key>",
+    "      <dict>",
+    "        <key>cpppp_ppppme.be065888921b</key>",
+    "        <string>cpppp/ppppme</string>",
+    "        <key>cpppp_ppppmecpppp_ppppmecpppp_ppppmec.9e80c135accd</key>",
+    "        <string>cpppp/ppppmecpppp/ppppmecpppp/ppppmecpppp/ppppmecpppp/ppppme</string>",
+    "      </dict>",
     "      <key>robocjk.status</key>",
     "      <integer>0</integer>",
     "      <key>robocjk.variationGlyphs</key>",
@@ -783,6 +791,18 @@ layerNameMappingTestData = [
     "          <true/>",
     "          <key>sourceName</key>",
     "          <string>bold</string>",
+    "          <key>status</key>",
+    "          <integer>0</integer>",
+    "        </dict>",
+    "        <dict>",
+    "          <key>layerName</key>",
+    "          <string>good-layer-name-with-source</string>",
+    "          <key>location</key>",
+    "          <dict/>",
+    "          <key>on</key>",
+    "          <true/>",
+    "          <key>sourceName</key>",
+    "          <string>good-layer-name-with-source</string>",
     "          <key>status</key>",
     "          <integer>0</integer>",
     "        </dict>",
@@ -829,26 +849,49 @@ async def test_bad_layer_name(writableTestFont):
         glyphMap = await writableTestFont.getGlyphMap()
         glyph = await writableTestFont.getGlyph(glyphName)
 
-        for badLayerName in ["boooo/oooold", "boooo/oooold" * 5]:
+        layerPaths = []
+
+        for doAddSource, badLayerName in [
+            (True, "good-layer-name-with-source"),
+            (False, "good-layer-name-without-source"),
+            (True, "boooo/oooold"),
+            (True, "boooo/oooold" * 5),
+            (False, "cpppp/ppppme"),
+            (False, "cpppp/ppppme" * 5),
+        ]:
             safeLayerName = makeSafeLayerName(badLayerName)
 
             layerPath = writableTestFont.path / "characterGlyph" / safeLayerName
             assert not layerPath.exists()
+            layerPaths.append(layerPath)
 
-            glyph.sources.append(GlyphSource(name=badLayerName, layerName=badLayerName))
+            if doAddSource:
+                glyph.sources.append(
+                    GlyphSource(
+                        name=badLayerName,
+                        layerName=badLayerName,
+                        customData={"fontra.development.status": 0},
+                    )
+                )
             glyph.layers[badLayerName] = Layer(
                 glyph=StaticGlyph(xAdvance=500, path=makeTestPath())
             )
 
         await writableTestFont.putGlyph(glyph.name, glyph, glyphMap[glyphName])
 
-        assert layerPath.exists()
-        layerGlifPath = layerPath / f"{glyphName}.glif"
-        assert layerGlifPath.exists()
+        for layerPath in layerPaths:
+            assert layerPath.exists()
+            layerGlifPath = layerPath / f"{glyphName}.glif"
+            assert layerGlifPath.exists()
 
         mainGlifPath = writableTestFont.path / "characterGlyph" / f"{glyphName}.glif"
         glifData = mainGlifPath.read_text()
         assert glifData.splitlines() == layerNameMappingTestData
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+        assert reopenedGlyph == glyph
 
 
 deleteItemsTestData = [
@@ -1031,6 +1074,48 @@ async def test_deleteGlyphRaisesKeyError(writableTestFont):
     async with contextlib.aclosing(writableTestFont):
         with pytest.raises(KeyError, match="Glyph 'A.doesnotexist' does not exist"):
             await writableTestFont.deleteGlyph(glyphName)
+
+
+async def test_variableComponentInNonSourceLayer(writableTestFont):
+    async with contextlib.aclosing(writableTestFont):
+        glyph = VariableGlyph(
+            name="b",
+            axes=[GlyphAxis(name="testing", minValue=0, defaultValue=0, maxValue=100)],
+            sources=[
+                GlyphSource(
+                    name="<default>",
+                    layerName="foreground",
+                    customData={"fontra.development.status": 0},
+                ),
+                GlyphSource(
+                    name="testing",
+                    location={"testing": 100},
+                    layerName="testing",
+                    customData={"fontra.development.status": 0},
+                ),
+            ],
+            layers={
+                "foreground": Layer(
+                    glyph=StaticGlyph(
+                        xAdvance=500,
+                        path=makeTestPath(),
+                        components=[Component(name="a")],
+                    )
+                ),
+                "testing": Layer(
+                    glyph=StaticGlyph(xAdvance=500, components=[Component(name="a")])
+                ),
+                "testing^background": Layer(
+                    glyph=StaticGlyph(xAdvance=500, components=[Component(name="a")])
+                ),
+            },
+        )
+        await writableTestFont.putGlyph(glyph.name, glyph, [ord("b")])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph("b")
+        assert reopenedGlyph == glyph
 
 
 async def test_putUnitsPerEm(writableTestFont):

@@ -226,6 +226,16 @@ def buildVariableGlyphFromLayerGlyphs(layerGlyphs, fontAxes) -> VariableGlyph:
             )
         )
 
+    nonSourceLayerComponents = dict(
+        defaultGlyph.lib.get("fontra.nonSourceLayerComponents", {})
+    )
+    if nonSourceLayerComponents:
+        for layerName, layer in layers.items():
+            components = nonSourceLayerComponents.get(layerName, [])
+            layer.glyph.components += [
+                structure(compo, Component) for compo in components
+            ]
+
     if fontraLayerNameMapping:
         layers = {
             fontraLayerNameMapping.get(layerName, layerName): layer
@@ -346,6 +356,7 @@ def buildLayerGlyphsFromVariableGlyph(
         layerGlyphs[layerName] = layerGlyph
         layerGlyphs[layerName].unicodes = codePoints
     defaultGlyph = layerGlyphs["foreground"]
+    sourceLayerNames = {"foreground"}
 
     if glyph.axes:
         defaultGlyph.lib["robocjk.axes"] = [unstructure(axis) for axis in glyph.axes]
@@ -406,6 +417,8 @@ def buildLayerGlyphsFromVariableGlyph(
             # and no "true" layer will be written
             del layerGlyphs[source.layerName]
 
+        sourceLayerNames.add(source.layerName)
+
         variationGlyphs.append(varDict)
 
     if variationGlyphs:
@@ -413,15 +426,33 @@ def buildLayerGlyphsFromVariableGlyph(
     else:
         defaultGlyph.lib.pop("robocjk.variationGlyphs", None)
 
-    if fontraLayerNameMapping:
-        rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
+    rcjkLayerNameMapping = {v: k for k, v in fontraLayerNameMapping.items()}
+    if rcjkLayerNameMapping:
         layerGlyphs = {
             rcjkLayerNameMapping.get(layerName, layerName): layerGlyph
             for layerName, layerGlyph in layerGlyphs.items()
         }
 
-    # Get rid of legacy data
-    defaultGlyph.lib.pop("fontra.layerNames", None)
+    nonSourceLayerComponents = {}
+    for layerName, layerGlyph in layerGlyphs.items():
+        if layerGlyph.variableComponents and layerName not in sourceLayerNames:
+            nonSourceLayerComponents[rcjkLayerNameMapping.get(layerName, layerName)] = (
+                unstructure(layerGlyph.variableComponents)
+            )
+
+    if nonSourceLayerComponents:
+        defaultGlyph.lib["fontra.nonSourceLayerComponents"] = nonSourceLayerComponents
+    else:
+        defaultGlyph.lib.pop("fontra.nonSourceLayerComponents", None)
+
+    # We also need to keep track of layers that are not being used by sources
+    nonSourceLayerNameMapping = {
+        k: v for k, v in fontraLayerNameMapping.items() if v not in sourceLayerNames
+    }
+    if nonSourceLayerNameMapping:
+        defaultGlyph.lib["fontra.layerNames"] = nonSourceLayerNameMapping
+    else:
+        defaultGlyph.lib.pop("fontra.layerNames", None)
 
     if glyph.customData:
         defaultGlyph.lib[CUSTOM_DATA_LIB_KEY] = glyph.customData
