@@ -894,6 +894,50 @@ async def test_bad_layer_name(writableTestFont):
         assert reopenedGlyph == glyph
 
 
+async def test_bad_layer_name_issue242(writableTestFont):
+    # https://github.com/googlefonts/fontra-rcjk/issues/242
+    glyphName = "test"
+    sourceName = "aaaa/bbbb"
+
+    sources = [
+        GlyphSource(
+            name="<default>",
+            layerName="foreground",
+            customData={
+                "fontra.development.status": 0,
+            },
+        ),
+        GlyphSource(
+            name=sourceName,
+            layerName=sourceName,
+            customData={
+                "fontra.development.status": 0,
+            },
+        ),
+    ]
+
+    layerGlyph = StaticGlyph(
+        xAdvance=500,
+        path=makeTestPath(),
+        components=[Component(name="uni0037")],
+    )
+
+    layers = {
+        "foreground": Layer(glyph=layerGlyph),
+        sourceName: Layer(glyph=layerGlyph),
+    }
+
+    glyph = VariableGlyph(name=glyphName, sources=sources, layers=layers)
+
+    async with contextlib.aclosing(writableTestFont):
+        await writableTestFont.putGlyph(glyph.name, glyph, [])
+
+    reopenedFont = getFileSystemBackend(writableTestFont.path)
+    async with contextlib.aclosing(reopenedFont):
+        reopenedGlyph = await reopenedFont.getGlyph(glyphName)
+        assert reopenedGlyph == glyph
+
+
 deleteItemsTestData = [
     "<?xml version='1.0' encoding='UTF-8'?>",
     '<glyph name="uni0030" format="2">',
