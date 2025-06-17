@@ -435,7 +435,8 @@ def buildLayerGlyphsFromVariableGlyph(
 
     nonSourceLayerComponents = {}
     for layerName, layerGlyph in layerGlyphs.items():
-        if layerGlyph.variableComponents and layerName not in sourceLayerNames:
+        fontraLayerName = fontraLayerNameMapping.get(layerName, layerName)
+        if layerGlyph.variableComponents and fontraLayerName not in sourceLayerNames:
             nonSourceLayerComponents[rcjkLayerNameMapping.get(layerName, layerName)] = (
                 unstructure(layerGlyph.variableComponents)
             )
